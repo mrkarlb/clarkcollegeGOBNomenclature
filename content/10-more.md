@@ -10,7 +10,9 @@ This site covers what students preparing for nursing, dental hygiene, and other 
 
 ## Credits
 
-This site is adapted from *Summary of IUPAC Nomenclature of Organic Compounds* and *Special Topics of IUPAC Nomenclature* by **Dr. Jan Simek**, Professor Emeritus of Chemistry, California Polytechnic State University, San Luis Obispo. His handouts have taught a generation of students to name organic molecules, and their structure — the priority tiers, the step-by-step rules, the worked examples — is the backbone of this site.
+This site is adapted from *Summary of IUPAC Nomenclature of Organic Compounds* and *Special Topics of IUPAC Nomenclature* by **Dr. Jan Simek**, Professor Emeritus of Chemistry, California Polytechnic State University, San Luis Obispo. His brilliance in the classroom inspired a generation of students to learn organic chemistry. His priority tiers, step-by-step rules, and many worked examples serve as the backbone of this site.
+
+I also want to credit my mother, **Dr. Christina Bailey**, also Professor Emeritus of Chemistry, California Polytechnic State University, San Luis Obispo, whose brilliance in biochemistry and biochemical pharmacology provides further inspiration for connecting naming with medical applications for you.
 
 Adapted and expanded for CHEM&amp;131 at Clark College by Dr. Karl Bailey: updated to the IUPAC 2013 recommendations, refocused on the health professions, with new worked examples, practice problems, and health connections. Chemical structures are drawn from their names with RDKit, and every name is checked against its structure with OPSIN.
 
