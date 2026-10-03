@@ -14,6 +14,8 @@ This site is adapted from *Summary of IUPAC Nomenclature of Organic Compounds* a
 
 I also want to credit my mother, **Dr. Christina Bailey**, also Professor Emeritus of Chemistry, California Polytechnic State University, San Luis Obispo, whose brilliance in biochemistry and biochemical pharmacology provides further inspiration for connecting naming with medical applications for you.
 
-Adapted and expanded for CHEM&amp;131 at Clark College by Dr. Karl Bailey: updated to the IUPAC 2013 recommendations, refocused on the health professions, with new worked examples, practice problems, and health connections. Chemical structures are drawn from their names with RDKit, and every name is checked against its structure with OPSIN.
+I adapted and expanded these handouts for CHEM&amp;131 at Clark College, updating them to the IUPAC 2013 recommendations, refocusing them on the health professions, and adding new worked examples, practice problems, and health connections. — Dr. Karl Bailey
+
+Chemical structures are drawn from their names with RDKit, and every name is checked against its structure with OPSIN.
 
 This site is licensed under [Creative Commons Attribution-NonCommercial 4.0](https://creativecommons.org/licenses/by-nc/4.0/). You may share and adapt it for non-commercial teaching, with credit to Dr. Simek and Dr. Bailey.
