@@ -54,7 +54,7 @@ With two groups on the ring, their relative positions matter. The current rules 
 
 1. **Two parent-type groups:** an NH₂ (aniline) and a COOH (benzoic acid). The carboxylic acid is higher on the ladder, so the parent is **benzoic acid**, and the COOH carbon is C1.
 2. **Number toward the other group:** counting the short way around the ring, the NH₂ is on C3.
-3. **The amine becomes a prefix:** **amino-**.
+3. **The amine becomes a prefix:** **amino-** (see the [priority ladder](#ladder)).
 4. **Name:** **3-aminobenzoic acid**, or in letter style, *m*-aminobenzoic acid.
 </details>
 
@@ -69,7 +69,7 @@ Letter prefixes only work for two groups. With three or more, always use numbers
 
 1. **Parent:** the nitrogen group makes this an **aniline**, so the nitrogen's ring carbon is C1.
 2. **Number the ring** to give the two chlorines the lowest numbers: {3, 4} beats {4, 5}.
-3. **The methyl is on the nitrogen**, not the ring, so its locant is ***N*-**.
+3. **The methyl is on the nitrogen**, not the ring, so its locant is ***N*-** instead of a number. You'll use *N-* again in [Amines and Amides](#amines).
 4. **Alphabetize:** **c**hloro before **m**ethyl.
 5. **Name:** **3,4-dichloro-*N*-methylaniline**.
 </details>
