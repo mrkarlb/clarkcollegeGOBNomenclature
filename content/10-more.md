@@ -2,7 +2,7 @@
 
 ## Going further
 
-This site covers what students preparing for nursing, dental hygiene, and other health careers need from organic nomenclature. If you're heading into a full year of organic chemistry, for a chemistry or biochemistry degree or for pre-med or pre-pharmacy, you'll need more depth, including aromatic compounds, bicyclic rings, and more functional groups. Two good free places to start:
+This site covers what students preparing for nursing, dental hygiene, and other health careers need from organic nomenclature. If you're heading into a full year of organic chemistry, for a chemistry or biochemistry degree or for pre-med or pre-pharmacy, you'll need more depth, including reactions of aromatic compounds, bicyclic rings, and more functional groups. Two good free places to start:
 
 - [**Master Organic Chemistry**](https://www.masterorganicchemistry.com/) by James Ashenhurst: clear, free articles on nomenclature, stereochemistry, and every topic in a two-semester organic course. (Some study guides on the site are paid; the articles are free.)
 - [**OpenStax Organic Chemistry**](https://openstax.org/details/books/organic-chemistry): a complete, free, peer-reviewed textbook.

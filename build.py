@@ -85,10 +85,15 @@ def alt_for(sid):
 USED = set()
 
 
+SHOWN = {}
+
+
 def figure(sid, cls="fig"):
     USED.add(sid)
+    SHOWN[sid] = SHOWN.get(sid, 0) + 1
+    uid = sid if SHOWN[sid] == 1 else f"{sid}-{SHOWN[sid]}"  # keep SVG title ids unique if a figure repeats
     s = BY_ID[sid]
-    svg = svg_for(sid, s[4], alt_for(sid), LOCANTS.get(sid), sid in SHOW_CIP)
+    svg = svg_for(uid, s[4], alt_for(sid), LOCANTS.get(sid), sid in SHOW_CIP)
     note = f'<span class="cm">{html.escape(s[3])}</span>' if s[3] else ""
     tag = {"health": '<span class="tag health">health</span>'}.get(s[5], "")
     return (f'<figure class="{cls}"><div class="pic">{svg}</div>'
@@ -125,7 +130,7 @@ def ladder():
         if t != tier:
             rows.append(f'<tr class="tier tier-{t}"><th colspan="5" scope="colgroup">{TIER_LABEL[t]}</th></tr>')
             tier = t
-        svg = svg_for(sid, BY_ID[sid][4], f"General structure of {cls.lower()}; R is any carbon group")
+        svg = svg_for(f"ladder-{sid}", BY_ID[sid][4], f"General structure of {cls.lower()}; R is any carbon group")
         rows.append(f'<tr class="t{t}"><th scope="row">{cls}</th><td class="lad-pic">{svg}</td>'
                     f"<td>{suf}</td><td>{pre}</td><td>{ex}</td></tr>")
     return ('<div class="table-wrap"><table class="ladder"><caption>Priority ladder for naming. '

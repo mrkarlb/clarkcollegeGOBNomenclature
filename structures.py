@@ -225,3 +225,45 @@ PRACTICE = [
  ("p8c", 8, "N-methylbutanamide", "draw", "",
   "A four-carbon amide (butanamide) with one methyl group on the nitrogen, shown by N-."),
 ]
+
+# ---------------- 10. Aromatic compounds (section file 03b) ----------------
+S += [
+("ar_benz", 10, "benzene", "", "c1ccccc1", "ref"),
+("ar_naph", 10, "naphthalene", "two fused benzene rings; mothballs", "c1ccc2ccccc2c1", "recog"),
+("ar_cl", 10, "chlorobenzene", "", "Clc1ccccc1", "worked"),
+("ar_no2", 10, "nitrobenzene", "", "[O-][N+](=O)c1ccccc1", "worked"),
+("ar_et", 10, "ethylbenzene", "", "CCc1ccccc1", "worked"),
+("ar_tol", 10, "toluene", "methylbenzene", "Cc1ccccc1", "ref"),
+("ar_phol", 10, "phenol", "hydroxybenzene", "Oc1ccccc1", "ref"),
+("ar_anil", 10, "aniline", "benzenamine", "Nc1ccccc1", "ref"),
+("ar_anis", 10, "anisole", "methoxybenzene", "COc1ccccc1", "ref"),
+("ar_bzac", 10, "benzoic acid", "", "OC(=O)c1ccccc1", "ref"),
+("ar_bzal", 10, "benzaldehyde", "", "O=Cc1ccccc1", "ref"),
+("ar_acph", 10, "1-phenylethan-1-one", "acetophenone", "CC(=O)c1ccccc1", "ref"),
+("ar_bzph", 10, "diphenylmethanone", "benzophenone", "O=C(c1ccccc1)c1ccccc1", "ref"),
+("ar_bn", 10, "benzyl", "a benzene ring plus one CH2", "*Cc1ccccc1", "generic"),
+("ar_o", 10, "1,2-dichlorobenzene", "ortho (o-): next door", "Clc1ccccc1Cl", "worked"),
+("ar_m", 10, "1,3-dichlorobenzene", "meta (m-): one carbon between", "Clc1cccc(Cl)c1", "worked"),
+("ar_p", 10, "1,4-dichlorobenzene", "para (p-): across the ring", "Clc1ccc(Cl)cc1", "worked"),
+("ar_ex1", 10, "3-methylphenol", "m-cresol", "Cc1cccc(O)c1", "worked"),
+("ar_ex2", 10, "2-methoxybenzaldehyde", "o-anisaldehyde", "COc1ccccc1C=O", "worked"),
+("ar_ex3", 10, "3-aminobenzoic acid", "m-aminobenzoic acid", "Nc1cccc(c1)C(=O)O", "worked"),
+("ar_ex4", 10, "3,4-dichloro-N-methylaniline", "", "CNc1ccc(Cl)c(Cl)c1", "worked"),
+("ar_tnt", 10, "2-methyl-1,3,5-trinitrobenzene", "TNT (2,4,6-trinitrotoluene)", "Cc1c([N+](=O)[O-])cc([N+](=O)[O-])cc1[N+](=O)[O-]", "worked"),
+("ar_eug", 10, "2-methoxy-4-(prop-2-en-1-yl)phenol", "eugenol (clove oil), used in dental cements", "COc1cc(CC=C)ccc1O", "health"),
+("ar_bht", 10, "2,6-di-tert-butyl-4-methylphenol", "BHT, an antioxidant food preservative", "Cc1cc(C(C)(C)C)c(O)c(C(C)(C)C)c1", "health"),
+("ar_oxy", 10, "(2-hydroxy-4-methoxyphenyl)(phenyl)methanone", "oxybenzone, a sunscreen UV filter", "COc1ccc(C(=O)c2ccccc2)c(O)c1", "health"),
+]
+LOCANTS.update({
+ "ar_o": [1, 6, 5, 4, 3, 2], "ar_m": [1, 7, 5, 4, 3, 2], "ar_p": [1, 2, 3, 4, 6, 7],
+ "ar_ex1": [5, 7, 1, 2, 3, 4], "ar_ex2": [7, 2, 3, 4, 5, 6], "ar_ex3": [5, 6, 1, 2, 3, 4],
+ "ar_ex4": [2, 9, 7, 5, 4, 3], "ar_tnt": [2, 1, 12, 11, 7, 6], "ar_eug": [10, 2, 3, 4, 8, 9],
+})
+PRACTICE += [
+ ("p_ar1", 10, "1-bromo-3-chlorobenzene", "name", "A benzene ring with a bromine and a chlorine separated by one ring carbon.",
+  "Neither group is a retained parent, so the parent is benzene. Bromo comes first alphabetically, so it gets C1, and the chlorine lands on C3. Common style: m-bromochlorobenzene."),
+ ("p_ar2", 10, "4-nitrophenol", "name", "A benzene ring with an OH group and, directly across the ring, an NO2 group.",
+  "The OH makes this a phenol, and the OH carbon is C1. The nitro group is across the ring at C4. Common style: p-nitrophenol."),
+ ("p_ar3", 10, "2-ethylaniline", "draw", "",
+  "Aniline is benzene with an NH2; the NH2 carbon is C1. The ethyl group goes on the next carbon, C2 (ortho)."),
+]

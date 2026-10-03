@@ -5,7 +5,7 @@ from rdkit.Chem.Draw import rdMolDraw2D
 from structures import S
 SEC={1:"1. How a name is built: priority ladder",2:"2. Alkanes, cycloalkanes, alkyl groups",3:"3. Alkenes, alkynes, cis/trans, E/Z",
  4:"4. Alcohols, ethers, halides, nitro compounds, thiols",5:"5. Aldehydes and ketones",6:"6. Chirality, R/S, and meso compounds",
- 7:"7. Carboxylic acids, esters, salts, anhydrides",8:"8. Amines, amine salts, amides",9:"9. Biomolecule connections (recognition)"}
+ 7:"7. Carboxylic acids, esters, salts, anhydrides",8:"8. Amines, amine salts, amides",9:"9. Biomolecule connections (recognition)",10:"3b. Aromatic compounds"}
 TAG={"worked":"worked example","ref":"reference","health":"health connection","recog":"recognition","generic":"pattern"}
 def svg(smi):
     m=Chem.MolFromSmiles(smi.replace("[X]","[Cl]"))
