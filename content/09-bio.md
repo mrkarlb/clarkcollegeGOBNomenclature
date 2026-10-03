@@ -2,7 +2,7 @@
 
 The rest of your course is biochemistry, and almost every biomolecule is built from the functional groups on this site. You won't need to give systematic names for these molecules; they have names everyone uses. But recognizing the functional groups inside them is what lets you predict how they behave in the body.
 
-## Fischer projections and D/L
+## Fischer projections and D/L {#fischer}
 
 Sugars and amino acids are drawn as **Fischer projections**, a flat shorthand for chiral centers. Each cross is a chiral carbon. The rule for reading one:
 
@@ -18,7 +18,7 @@ Sugars and amino acids are drawn as **Fischer projections**, a flat shorthand fo
 **D/L is not the same as R/S.** D/L compares a molecule to glyceraldehyde; R/S comes from the priority rules. D-Glyceraldehyde happens to be R. Nearly all sugars in your body are **D**, and nearly all amino acids are **L**. Most L-amino acids are S, but **L-cysteine is R**, because its sulfur outranks the COOH carbon.
 </div>
 
-## Fatty acids: chain length and cis/trans
+## Fatty acids: chain length and cis/trans {#fatty-acids}
 
 Fatty acids are long-chain carboxylic acids, named from the alkane with the same number of carbons. The double bonds in natural fats are almost always **cis**, which puts a bend in the chain.
 
@@ -33,19 +33,19 @@ Fatty acids are long-chain carboxylic acids, named from the alkane with the same
 
 [[figs bio_pal bio_ste bio_ole bio_ela]]
 
-## Thiols and disulfides in proteins
+## Thiols and disulfides in proteins {#disulfides}
 
 The amino acid **cysteine** carries a thiol (–SH). Two cysteines in a protein chain can link through a **disulfide bond** (–S–S–), forming **cystine**. These bridges lock proteins such as insulin and keratin (hair, nails) into shape.
 
 [[figs bio_cys bio_cyss]]
 
-## Fused rings: steroids
+## Fused rings: steroids {#steroids}
 
 **Cholesterol** and the steroid hormones (testosterone, estradiol, cortisol) share a core of **four fused rings**: rings that share an edge. You don't need to name fused rings; recognize the four-ring shape, and the functional groups on it. Cholesterol is an alcohol, with an OH on its first ring.
 
 [[fig bio_chol]]
 
-## Nitrogen rings: heterocycles
+## Nitrogen rings: heterocycles {#heterocycles}
 
 Many biomolecules and drugs contain rings with nitrogen in them. Recognize these five by sight.
 
@@ -57,7 +57,7 @@ Many biomolecules and drugs contain rings with nitrogen in them. Recognize these
 
 [[fig bio_ade]]
 
-## Phosphates: the same patterns, with phosphorus
+## Phosphates: the same patterns, with phosphorus {#phosphates}
 
 Phosphoric acid (H₃PO₄) forms the same kinds of bonds carboxylic acids do. Three of them run the chemistry of your cells:
 
