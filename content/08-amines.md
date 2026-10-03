@@ -40,6 +40,8 @@ Amines are weak bases. With an acid, the nitrogen picks up H⁺ and becomes a po
 
 <div class="health" markdown="1">
 **Health connection.** Many drugs are amines sold as **hydrochloride salts**: diphenhydramine HCl (Benadryl), sertraline HCl (Zoloft), lidocaine HCl. The charged salt dissolves in water, which makes it easier to formulate as a tablet or injection. The same chemistry is why fish smells less with lemon juice: acid turns the fishy-smelling amines into odorless salts.
+
+**Review from CHEM&121:** why an N with four bonds carries a +1 charge ([Bonding Patterns and Formal Charge](https://mrkarlb.github.io/clarkcollegeGOBStructures/index.html#patterns)), and why the charged salt dissolves in water ([Charged molecules in the body](https://mrkarlb.github.io/clarkcollegeGOBStructures/shape.html#charged)).
 </div>
 
 ## Amides: –CO–N

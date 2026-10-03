@@ -42,6 +42,8 @@ Removing the acidic H from a carboxylic acid gives a **carboxylate** anion. Name
 
 <div class="health" markdown="1">
 **Health connection.** At the pH of your blood (about 7.4), most carboxylic acids exist as carboxylate ions. That's why biochemistry names often use the salt form: **lactate**, **pyruvate**, and **citrate** rather than lactic, pyruvic, and citric acid.
+
+**Review from CHEM&121:** why the −1 charge is shared by both oxygens ([Resonance](https://mrkarlb.github.io/clarkcollegeGOBStructures/index.html#resonance)), and how charged groups behave in water ([Charged molecules in the body](https://mrkarlb.github.io/clarkcollegeGOBStructures/shape.html#charged)).
 </div>
 
 ## Esters: C–CO–O–C
