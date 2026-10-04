@@ -44,7 +44,7 @@ def _slim_style(m):
 SCALE = 1.5  # display size relative to the drawing
 
 
-def svg_for(sid, smiles, alt, locants=None, show_cip=False, mol=None, scale=None):
+def svg_for(sid, smiles, alt, locants=None, show_cip=False, mol=None, scale=None, pad_thin=False):
     """mol: optional RDKit molecule with 2D coordinates already set (used to line up
     a product with its starting material). scale: display size (default SCALE)."""
     generic = "*" in smiles
@@ -74,11 +74,17 @@ def svg_for(sid, smiles, alt, locants=None, show_cip=False, mol=None, scale=None
     o.fixedBondLength = 38
     o.minFontSize = 15
     o.annotationFontScale = 0.6
+    if pad_thin:
+        o.additionalAtomLabelPadding = 0.12   # Reactions page: keep bond ends clear of H and O labels
     d.DrawMolecule(mol)
     d.FinishDrawing()
     svg = d.GetDrawingText()
     w, h = re.search(r"viewBox='0 0 ([\d.]+) ([\d.]+)'", svg).groups()
     w, h = round(float(w)), round(float(h))
+    y0 = 0
+    if pad_thin and h < 44:   # a straight-line molecule (CO2): give its labels room above and below
+        pad = (44 - h) // 2 + 1
+        y0, h = -pad, h + 2 * pad
 
     svg = svg.split("<!-- END OF HEADER -->", 1)[1]
     svg = re.sub(r"<rect[^>]*/>", "", svg, count=1)  # no background box
@@ -93,7 +99,7 @@ def svg_for(sid, smiles, alt, locants=None, show_cip=False, mol=None, scale=None
     svg = re.sub(r"\s*\n\s*", "", svg)
     tid = f"t-{sid}"
     return (
-        f'<svg class="mol{" generic" if generic else ""}" viewBox="0 0 {w} {h}" width="{round(w * (scale or SCALE))}" height="{round(h * (scale or SCALE))}" '
+        f'<svg class="mol{" generic" if generic else ""}" viewBox="0 {y0} {w} {h}" width="{round(w * (scale or SCALE))}" height="{round(h * (scale or SCALE))}" '
         f'role="img" aria-labelledby="{tid}" xmlns="http://www.w3.org/2000/svg">'
         f'<title id="{tid}">{html.escape(alt)}</title>{svg}</svg>'
     )

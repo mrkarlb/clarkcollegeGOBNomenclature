@@ -9,11 +9,13 @@ When the two pieces are H and OH (water), the addition is called **hydration** a
 
 [[rxn pr_addelim]]
 
-**Which carbon gets the OH?** When the two carbons of the C=C aren't the same, the OH goes to the carbon that already has **more carbons attached**, and the H goes to the carbon with more hydrogens. In propene, that puts the OH on the middle carbon: propan-2-ol, not propan-1-ol.
+**Which carbon gets the OH?** When the two carbons of the C=C aren't the same, the H adds to the carbon that already has **more hydrogens**, and the OH goes to the carbon with **more carbons attached**. This is **Markovnikov's rule**, and it applies to every addition of H–X across a C=C (H–OH, H–Cl, H–Br). In propene, it puts the OH on the middle carbon: propan-2-ol, not propan-1-ol.
 
-**Dehydration** removes the OH and an H from a neighboring carbon. When there's a choice of neighbors, the major product is the alkene with **more carbons attached to the C=C**:
+**Dehydration** removes the OH and an H from a neighboring carbon. When there's a choice of neighbors, the major product is the alkene with **more carbons attached to the C=C**. This is **Zaitsev's rule**: the H comes off the neighboring carbon that has **fewer hydrogens**.
 
 [[rxn r_dehyd]]
+
+Addition and elimination each have a rule for which carbon reacts. Markovnikov's rule tells you where the pieces go when they add; Zaitsev's rule tells you which double bond forms when they leave.
 
 <div class="note" markdown="1">
 **In the lab vs. in the body.** In the lab, hydration needs an acid catalyst (H₃O⁺), and dehydration needs acid and heat. In the body, an enzyme does both at body temperature, and it decides exactly which carbon gets the OH and which way it points. That's why enzymes make only one enantiomer, like (S)-malate below.
@@ -55,7 +57,7 @@ Bromine is red-brown; the product is colorless. When bromine water loses its col
 
 [[rxn r_hcl]]
 
-With HCl, HBr, or HI, the H goes to the carbon with more hydrogens and the halogen to the carbon with more carbons attached, just as with water.
+With HCl, HBr, or HI, **Markovnikov's rule** applies just as it does with water: the H goes to the carbon with more hydrogens, and the halogen to the carbon with more carbons attached.
 
 ## Addition to a C=O: hemiacetals and sugar rings {#hemiacetal}
 

@@ -191,12 +191,11 @@ def fischer(key):
     parts = [_label(top, cx, y0 - 8, "middle")]
     for i, (left, right) in enumerate(rows):
         y = y0 + step * (i + 1)
-        parts.append(f'<line x1="{cx}" y1="{y - step + 6}" x2="{cx}" y2="{y}" />')
         parts.append(f'<line x1="{cx - 40}" y1="{y}" x2="{cx + 40}" y2="{y}" />')
         parts.append(_label(left, cx - 46, y + 6, "end"))
         parts.append(_label(right, cx + 46, y + 6, "start"))
     yb = y0 + step * (len(rows) + 1)
-    parts.append(f'<line x1="{cx}" y1="{yb - step}" x2="{cx}" y2="{yb - 10}" />')
+    parts.append(f'<line x1="{cx}" y1="{y0 + 6}" x2="{cx}" y2="{yb - 10}" />')   # one continuous vertical bond
     parts.append(_label(bottom, cx, yb + 8, "middle"))
     desc = (f"Fischer projection of {title}: {top} at top, {bottom} at bottom; "
             + "; ".join(f"carbon {i + 2}: {l} on left, {r} on right" for i, (l, r) in enumerate(rows)))

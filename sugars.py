@@ -288,12 +288,11 @@ def fischer_svg(uid, smiles, alt, top=None):
         x_vec = _pos(conf, o) - c
         right = np.linalg.det(np.array([up, down, x_vec])) < 0   # same handedness as (up back, down back, X front-right)
         y = y0 + step * k
-        lines.append(_line(cx, y - step + 8, cx, y))
         lines.append(_line(cx - 34, y, cx + 34, y))
         texts.append(_t(cx - 38, y + 6, "H" if right else "HO", "end"))
         texts.append(_t(cx + 38, y + 6, "OH" if right else "H", "start"))
         rows.append(right)
     yb = y0 + step * (n - 1)
-    lines.append(_line(cx, yb - step, cx, yb - 10))
+    lines.append(_line(cx, y0 + 8, cx, yb - 10))       # one continuous vertical bond, no gaps at the crossings
     texts.append(_t(cx, yb + 8, _end_label(m, chain[-1])))
     return _svg(uid, alt, 180, yb + 22, lines, texts), rows

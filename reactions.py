@@ -192,6 +192,7 @@ RX = [
 ("r_zw", "zwitterion", 1, [(1, "ala")], [(1, "alazw")], "near pH 7", "", "⇌"),
 # sugars
 ("r_glcox", "ox_aldehyde", 1, [(1, "glc"), (1, "h2o")], [(1, "glcacid"), (1, "2h")], "glucose oxidase", "on a test strip, the 2 H go to O₂", "→"),
+("r_benedict", "ox_aldehyde", 1, [(1, "glc"), (1, "h2o")], [(1, "glcacid"), (1, "2h")], "Benedict's reagent, heat", "blue Cu²⁺ → brick-red Cu₂O", "→"),
 ("r_sorb", "reduction", 1, [(1, "glc"), (1, "2h")], [(1, "sorb")], "aldose reductase", "NADPH + H⁺ → NADP⁺", "→"),
 # combustion (balance only)
 ("r_comb", "combustion", 1, [(1, "glcf"), (6, "o2")], [(6, "co2t"), (6, "h2o")], "", "", "→"),
@@ -229,13 +230,13 @@ NO_REACTION = [
 #   "noreaction":     show the starting material; the answer is "no reaction"
 PRACTICE = [
  ("p_hydra", "x_hydra", "products", "Draw the major product.",
-  "Water adds across the C=C. The OH goes to the alkene carbon that already has more carbons attached (here, two), and the H goes to the CH₂ end. The product is a 3° alcohol."),
+  "Water adds across the C=C, following Markovnikov's rule: the H goes to the CH₂ end (the carbon with more hydrogens), and the OH goes to the carbon with more carbons attached (here, two). The product is a 3° alcohol."),
  ("p_dehyd", "x_dehyd", "products", "Draw the organic product of dehydration.",
-  "Removing the OH and an H from a neighboring carbon makes a C=C. Both neighbors are equivalent here, so there is only one alkene: pent-2-ene."),
+  "Removing the OH and an H from a neighboring carbon makes a C=C. Both neighbors are equivalent here, so Zaitsev's rule has no choice to make: there is only one alkene, pent-2-ene."),
  ("p_hydrog", "x_hydrog", "products", "Draw the product.",
   "H₂ adds one H to each carbon of the C=C, giving the saturated ring."),
  ("p_hbr", "x_hbr", "products", "Draw the major product.",
-  "H goes to the CH₂ end of the C=C, and Br goes to the carbon with more carbons attached, carbon 2."),
+  "Markovnikov's rule: H goes to the CH₂ end of the C=C (more hydrogens), and Br goes to the carbon with more carbons attached, carbon 2."),
  ("p_ox1", "x_ox1", "products", "Draw the organic product when one pair of H is removed.",
   "A 1° alcohol loses 2 H (one from O, one from C) to become an aldehyde. In the body the aldehyde would usually go on to a carboxylic acid."),
  ("p_ox2", "x_ox2", "products", "Draw the organic product of oxidation.",

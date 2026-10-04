@@ -4,6 +4,7 @@ Called from build.py. Checks every reaction (rxncheck.py) and every name
 (OPSIN), then renders content-reactions/*.md with reaction schemes.
 """
 import glob
+import math
 import html
 import os
 import re
@@ -92,14 +93,51 @@ def _uid(base):
 RXN_SCALE = 1.35  # structures inside reaction schemes are drawn a little smaller
 
 
+ALDEHYDE_C = Chem.MolFromSmarts("[CX3H1](=O)[#6]")
+
+
+def one_carbon(m):
+    return sum(a.GetSymbol() == "C" for a in m.GetAtoms()) == 1
+
+
+def lewis_layout(m):
+    """A one-carbon molecule as a full structural formula: every H on the carbon drawn,
+    bonds at right angles (sp3) or spread around the carbon (sp2), as in an intro course."""
+    c = next(a.GetIdx() for a in m.GetAtoms() if a.GetSymbol() == "C")
+    m = Chem.AddHs(m, onlyOnAtoms=(c,))
+    rdDepictor.Compute2DCoords(m)
+    nb = list(m.GetAtomWithIdx(c).GetNeighbors())
+    heavy = [n for n in nb if n.GetSymbol() != "H"]
+    hs = [n for n in nb if n.GetSymbol() == "H"]
+    dbl = [n for n in heavy if m.GetBondBetweenAtoms(c, n.GetIdx()).GetBondTypeAsDouble() == 2]
+    sgl = [n for n in heavy if n not in dbl]
+    if len(nb) == 4:
+        order, angs = heavy + hs, [0, 90, 180, 270]
+    elif len(nb) == 3 and len(heavy) == 2:
+        order, angs = dbl + sgl + hs, [90, 0, 180]
+    elif len(nb) == 3:
+        order, angs = dbl + hs, [0, 120, 240]
+    else:
+        return m                                   # CO2: the default straight line is right
+    conf = m.GetConformer()
+    conf.SetAtomPosition(c, Geometry.Point3D(0, 0, 0))
+    for n, a in zip(order, angs):
+        r = math.radians(a)
+        conf.SetAtomPosition(n.GetIdx(), Geometry.Point3D(1.5 * math.cos(r), 1.5 * math.sin(r), 0))
+    return m
+
+
 def prepared(smi):
-    """Molecule for drawing. A one-carbon molecule shows its H atoms, since a bare
-    line or a lone label is hard to read as methanol or methanal."""
+    """Molecule for drawing, with 2D coordinates.
+    - One-carbon molecules are drawn as full structural formulas (a bare line can't show methanol).
+    - An aldehyde shows its C–H, the H that separates it from a ketone and is lost on oxidation;
+      this also centers the C=O."""
     m = Chem.MolFromSmiles(smi)
-    cs = [a for a in m.GetAtoms() if a.GetSymbol() == "C"]
-    if len(cs) == 1 and m.GetNumHeavyAtoms() > 1:
-        h = cs[0].GetTotalNumHs()
-        cs[0].SetProp("atomLabel", "C" + ("H" if h else "") + (f"<sub>{h}</sub>" if h > 1 else ""))
+    if one_carbon(m) and smi != "O=C=O":
+        return lewis_layout(m)
+    ald = [t[0] for t in m.GetSubstructMatches(ALDEHYDE_C)]
+    if ald:
+        m = Chem.AddHs(m, onlyOnAtoms=tuple(ald))
     rdDepictor.Compute2DCoords(m)
     triglyceride_layout(m)
     return m
@@ -146,7 +184,7 @@ def aligned(smi, ref):
     """Draw smi with the atoms it shares with ref in the same positions as in ref,
     so a product sits the same way round as its starting material."""
     m = prepared(smi)
-    if ref is None:
+    if ref is None or one_carbon(Chem.MolFromSmiles(smi)):
         return m
     res = rdFMCS.FindMCS([ref, m], timeout=2, atomCompare=rdFMCS.AtomCompare.CompareElements,
                          bondCompare=rdFMCS.BondCompare.CompareAny, ringMatchesRingOnly=True,
@@ -174,7 +212,7 @@ def species_fig(sid, mol=None, scale=None, top=None):
     elif is_fischer(smi):
         svg = fischer_svg(uid, smi, alt + ", drawn as a Fischer projection", top)[0]
     else:
-        svg = svg_for(uid, smi, alt, mol=mol if mol is not None else prepared(smi), scale=scale)
+        svg = svg_for(uid, smi, alt, mol=mol if mol is not None else prepared(smi), scale=scale, pad_thin=True)
     cm = f'<span class="cm">{html.escape(note)}</span>' if note else ""
     return (f'<figure class="fig"><div class="pic">{svg}</div>'
             f'<figcaption><span class="nm">{style_name(name)}</span>{cm}</figcaption></figure>')

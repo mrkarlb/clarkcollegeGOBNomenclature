@@ -91,6 +91,18 @@ A sugar's open-chain form has an **aldehyde**, so it can be oxidized (to a carbo
 **Health connection: testing for glucose.** Urine and blood glucose test strips contain the enzyme glucose oxidase. It oxidizes glucose and hands the 2 H to oxygen, making hydrogen peroxide, which a second enzyme uses to turn a dye a color. The deeper the color, the more glucose.
 </div>
 
+### Reducing sugars and Benedict's test {#benedicts}
+
+Benedict's reagent contains copper(II) ions, Cu²⁺, which make it blue. Heated with a sugar that has an aldehyde, the Cu²⁺ takes the electrons the aldehyde gives up and is reduced to copper(I) oxide, Cu₂O, a brick-red solid. The sugar is oxidized and the copper is reduced: the redox pair again.
+
+[[rxn r_benedict]]
+
+A sugar that turns Benedict's reagent brick-red is called a **reducing sugar**, because it reduces the copper. Glucose is a reducing sugar even though nearly all of it is in a ring: the ring keeps opening and closing (see [sugar rings](#hemiacetal)), and each time it opens, the aldehyde is free to react. So any sugar with a ring that can open is a reducing sugar, including **maltose** and **lactose**, which each have one free ring. **Sucrose** (table sugar) is not: its glycosidic bond joins the ring-forming carbons of both of its sugars, so neither ring can open. Fructose, a ketone sugar, also tests positive, because in the basic reagent it rearranges into an aldehyde sugar.
+
+<div class="health" markdown="1">
+**Health connection.** Before glucose meters and enzyme test strips, people with diabetes checked their urine for glucose with tablets that ran this same copper reaction, reading the result from the color: blue for none, through green and orange, to brick red for a lot.
+</div>
+
 [[rxn r_sorb]]
 
 <div class="health" markdown="1">
