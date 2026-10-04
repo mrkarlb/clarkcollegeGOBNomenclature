@@ -231,14 +231,21 @@ def haworth_svg(uid, smiles, alt):
                     lab, anchor = "HO", "middle"
                 texts.append(_t(x, ty, lab, anchor))
     if bridge:
-        # C1 of the left ring → bridging O → C4 of the right ring
+        # Glycosidic (acetal) bond: straight bonds C1–O and O–C4, with no bends. In a
+        # skeletal drawing every unlabeled bend is a carbon, so a stem-then-bend path
+        # would read as C1–CH2–O, an ether.
         x1, y1 = RING[1][0], RING[1][1] + 34
         x4, y4 = RING[4][0] + dx, RING[4][1] + 34
         s1 = -1 if bridge[1] == "up" else 1
         s4 = -1 if bridge[4] == "up" else 1
-        ya, yb = y1 + s1 * STEM, y4 + s4 * STEM
-        ox, oy = (x1 + x4) / 2, (ya + yb) / 2 + (8 if s1 == s4 == 1 else -8 if s1 == s4 == -1 else 0)
-        lines += [_line(x1, y1, x1, ya), _line(x1, ya, ox - 7, oy), _line(ox + 7, oy, x4, yb), _line(x4, yb, x4, y4)]
+        if s1 == s4:            # α(1→4), both bonds on the same face: O between and beyond the rings
+            ox, oy = (x1 + x4) / 2, y1 + s1 * (STEM + 6)
+        else:                   # β(1→4): O on C1's face, directly above (or below) C1's side
+            ox, oy = x1 + (x4 - x1) * 0.3, y1 + s1 * STEM
+        def trim(xa, ya, xb, yb, r=9):   # stop the bond short of the O label
+            d = ((xb - xa) ** 2 + (yb - ya) ** 2) ** 0.5
+            return xb - (xb - xa) * r / d, yb - (yb - ya) * r / d
+        lines += [_line(x1, y1, *trim(x1, y1, ox, oy)), _line(*trim(x4, y4, ox, oy), x4, y4)]
         texts.append(_t(ox, oy + 6, "O"))
     w = 196 + (dx if bridge else 0)
     return _svg(uid, alt, w, 200, lines, texts)

@@ -44,7 +44,7 @@ def _slim_style(m):
 SCALE = 1.5  # display size relative to the drawing
 
 
-def svg_for(sid, smiles, alt, locants=None, show_cip=False, mol=None, scale=None, pad_thin=False):
+def svg_for(sid, smiles, alt, locants=None, show_cip=False, mol=None, scale=None, pad_thin=False, bond_len=None):
     """mol: optional RDKit molecule with 2D coordinates already set (used to line up
     a product with its starting material). scale: display size (default SCALE)."""
     generic = "*" in smiles
@@ -55,7 +55,7 @@ def svg_for(sid, smiles, alt, locants=None, show_cip=False, mol=None, scale=None
     for a in mol.GetAtoms():
         if "[X]" in smiles and a.GetSymbol() == "Cl":
             a.SetProp("atomLabel", "X")
-        if a.GetAtomicNum() == 0:
+        if a.GetAtomicNum() == 0 and not a.HasProp("atomLabel"):
             a.SetProp("atomLabel", "R")
     if locants:
         for n, idx in enumerate(locants, 1):
@@ -71,7 +71,7 @@ def svg_for(sid, smiles, alt, locants=None, show_cip=False, mol=None, scale=None
     o.setAtomPalette(PALETTE)
     o.addStereoAnnotation = show_cip
     o.padding = 0.08
-    o.fixedBondLength = 38
+    o.fixedBondLength = bond_len or 38   # shorter bonds (same label size) for very large molecules
     o.minFontSize = 15
     o.annotationFontScale = 0.6
     if pad_thin:

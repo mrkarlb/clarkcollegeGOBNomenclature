@@ -201,7 +201,7 @@ def aligned(smi, ref):
     return m
 
 
-def species_fig(sid, mol=None, scale=None, top=None):
+def species_fig(sid, mol=None, scale=None, top=None, bond_len=None):
     """mol: 2D layout lined up with the reaction; top: for an open-chain sugar, the atom drawn as C1."""
     USED.add(sid)
     _, name, note, smi = SP_BY[sid]
@@ -212,18 +212,107 @@ def species_fig(sid, mol=None, scale=None, top=None):
     elif is_fischer(smi):
         svg = fischer_svg(uid, smi, alt + ", drawn as a Fischer projection", top)[0]
     else:
-        svg = svg_for(uid, smi, alt, mol=mol if mol is not None else prepared(smi), scale=scale, pad_thin=True)
+        svg = svg_for(uid, smi, alt, mol=mol if mol is not None else prepared(smi), scale=scale, pad_thin=True,
+                      bond_len=bond_len)
     cm = f'<span class="cm">{html.escape(note)}</span>' if note else ""
     return (f'<figure class="fig"><div class="pic">{svg}</div>'
             f'<figcaption><span class="nm">{style_name(name)}</span>{cm}</figcaption></figure>')
 
 
-def item(coef, sid, mol=None, top=None):
+COMPACT_BOND = 30   # bond length for reactions with a very large molecule (triglycerides)
+
+
+def condense_chains(m, min_len=8):
+    """Draw each long fatty-acid chain in condensed form, (CH2)nCH3, as textbooks do:
+    the C=O end that reacts stays drawn, the unchanging tail becomes a label.
+    Display only; the full structure is what the build checks."""
+    rw = Chem.RWMol(m)
+    conf = rw.GetConformer()
+    remove = []
+    for co in [a.GetIdx() for a in rw.GetAtoms() if a.GetSymbol() == "C" and any(
+            b.GetBondTypeAsDouble() == 2 and b.GetOtherAtom(a).GetSymbol() == "O" for b in a.GetBonds())]:
+        for start in [n.GetIdx() for n in rw.GetAtomWithIdx(co).GetNeighbors() if n.GetSymbol() == "C"]:
+            chain, prev, cur = [], co, start
+            while True:
+                at = rw.GetAtomWithIdx(cur)
+                if at.GetSymbol() != "C" or at.GetIsAromatic() or at.IsInRing() or at.GetDegree() > 2:
+                    chain = []
+                    break
+                chain.append(cur)
+                nxt = [n.GetIdx() for n in at.GetNeighbors() if n.GetIdx() != prev]
+                if not nxt:
+                    break
+                if any(rw.GetBondBetweenAtoms(cur, x).GetBondTypeAsDouble() != 1 for x in nxt):
+                    chain = []
+                    break
+                prev, cur = cur, nxt[0]
+            if len(chain) >= min_len:
+                n_ch2 = len(chain) - 1
+                first = rw.GetAtomWithIdx(chain[0])
+                first.SetAtomicNum(0)
+                first.SetNoImplicit(True)
+                first.SetProp("atomLabel", f"(CH<sub>2</sub>)<sub>{n_ch2}</sub>CH<sub>3</sub>")
+                remove += chain[1:]
+    for idx in sorted(remove, reverse=True):
+        rw.RemoveAtom(idx)
+    out = rw.GetMol()
+    # put each condensed tail to the right of its C=O, so the label reads left to right
+    conf = out.GetConformer()
+    for a in out.GetAtoms():
+        if a.HasProp("atomLabel") and a.GetAtomicNum() == 0:
+            c = a.GetNeighbors()[0].GetIdx()
+            if conf.GetAtomPosition(a.GetIdx()).x < conf.GetAtomPosition(c).x:
+                for i in range(out.GetNumAtoms()):
+                    p_ = conf.GetAtomPosition(i)
+                    conf.SetAtomPosition(i, Geometry.Point3D(-p_.x, p_.y, 0))
+                break
+    return out
+
+
+def upright_glycerol():
+    """Glycerol drawn as a column with its OH groups to the right, lined up with the
+    backbone of the triglyceride it comes from (or goes into)."""
+    m = Chem.MolFromSmiles("OCC(O)CO")
+    rdDepictor.Compute2DCoords(m)
+    conf = m.GetConformer()
+    pos = {0: (1.3, 0.75), 1: (0, 0), 2: (0, -3.0), 3: (1.3, -2.25), 4: (0, -6.0), 5: (1.3, -5.25)}
+    for i, (x, y) in pos.items():
+        conf.SetAtomPosition(i, Geometry.Point3D(x, y, 0))
+    return m
+
+
+def has_long_chain(smi):
+    m = Chem.MolFromSmiles(smi)
+    return condense_chains(prepared(smi)).GetNumAtoms() < Chem.AddHs(m, onlyOnAtoms=()).GetNumAtoms()
+
+
+def item(coef, sid, mol=None, top=None, compact=False, scale=None):
     c = f'<span class="coef">{coef}</span>' if coef > 1 else ""
     if sid in TX_BY:
         return f'{c}<span class="chip">{TX_BY[sid][1]}</span>'
-    big = Chem.MolFromSmiles(SP_BY[sid][3]).GetNumHeavyAtoms() > 30
-    return c + species_fig(sid, mol=mol, scale=0.85 if big else RXN_SCALE, top=top)
+    if compact and has_long_chain(SP_BY[sid][3]):
+        mol = condense_chains(prepared(SP_BY[sid][3]))
+    if compact and Chem.CanonSmiles(SP_BY[sid][3]) == Chem.CanonSmiles("OCC(O)CO"):
+        mol = upright_glycerol()
+    if compact and coef > 1:
+        # Draw each molecule, stacked, like the chains of a triglyceride (the textbook layout),
+        # instead of one molecule with a coefficient in front.
+        USED.add(sid)
+        _, name, note, smi = SP_BY[sid]
+        m = mol if mol is not None else prepared(smi)
+        svgs = "".join(svg_for(_uid(f"r-{sid}"), smi, f"Structure of {name}", mol=m, scale=1.0, pad_thin=True,
+                               bond_len=COMPACT_BOND) for _ in range(coef))
+        cm = f'<span class="cm">{html.escape(note)}</span>' if note else ""
+        return (f'<figure class="fig stack"><div class="pic">{svgs}</div><figcaption>'
+                f'<span class="nm">{coef} × {style_name(name)}</span>{cm}</figcaption></figure>')
+    if compact:   # every structure in the reaction gets the same short bonds, so they stay to scale
+        return c + species_fig(sid, mol=mol, scale=1.0, top=top, bond_len=COMPACT_BOND)
+    return c + species_fig(sid, mol=mol, scale=scale or RXN_SCALE, top=top)
+
+
+def is_compact(*sides):
+    return any(s in SP_BY and Chem.MolFromSmiles(SP_BY[s][3]).GetNumHeavyAtoms() > 30
+               for side in sides for _, s in side)
 
 
 ARROWS = {
@@ -240,16 +329,16 @@ ARROWS["pair"] = ARROWS["⇌"]
 
 
 def arrow(kind, above, below):
-    width = min(max(len(above), len(below), 12) * 0.62 + 2, 26)   # em; long labels wrap past 26em
+    width = min(max(len(above), len(below), 9) * 0.6 + 1.5, 26)   # em; long labels wrap past 26em
     return (f'<span class="arrow" style="width:{width:.1f}em"><span class="ab">{html.escape(above)}</span>{ARROWS[kind]}'
             f'<span class="be">{html.escape(below)}</span></span>')
 
 
-def side_list(side, mols=None):
+def side_list(side, mols=None, compact=False, scale=None):
     out = []
     for i, (c, s) in enumerate(side):
         plus = '<span class="plus">+</span>' if i else ""
-        out.append(f'<span class="term">{plus}{item(c, s, (mols or {}).get(s), (mols or {}).get(("top", s)))}</span>')
+        out.append(f'<span class="term">{plus}{item(c, s, (mols or {}).get(s), (mols or {}).get(("top", s)), compact, scale)}</span>')
     return "".join(out)
 
 
@@ -307,7 +396,11 @@ def scheme(rid, show_tag=True, hide_products=False):
     USED_RX.add(rid)
     _, rule, _, left, right, above, below, kind = RX_BY[rid]
     mols = layout(left, right)
-    rhs = '<span class="unknown">?</span>' if hide_products else side_list(right, mols)
+    compact = is_compact(left, right)
+    atoms = sum(Chem.MolFromSmiles(SP_BY[s_][3]).GetNumHeavyAtoms() for _, s_ in left + right
+                if s_ in SP_BY and not is_haworth(SP_BY[s_][3]) and not is_fischer(SP_BY[s_][3]))
+    scale = 1.0 if atoms > 30 else None   # a reaction with many atoms in all is drawn a little smaller
+    rhs = '<span class="unknown">?</span>' if hide_products else side_list(right, mols, compact, scale)
     sentence = f"{words(left)} gives {'what product?' if hide_products else words(right)}"
     if kind == "pair":
         sentence = f"Forward ({above}): {words(left)} gives {words(right)}. Reverse ({below}): {words(right)} gives {words(left)}."
@@ -320,7 +413,7 @@ def scheme(rid, show_tag=True, hide_products=False):
         sentence = f"{type_words(rule).capitalize()}. " + sentence
     head = f'<div class="rxn-head">{tag_for(rule)}</div>' if show_tag else ""
     return (f'<figure class="rxn">{head}<p class="sr-only">{html.escape(sentence)}</p>'
-            f'<div class="rxn-row" aria-hidden="true">{side_list(left, mols)}{arrow(kind, above, below)}{rhs}</div></figure>')
+            f'<div class="rxn-row" aria-hidden="true">{side_list(left, mols, compact, scale)}{arrow(kind, above, below)}{rhs}</div></figure>')
 
 
 def noreaction_scheme(nid, label):
