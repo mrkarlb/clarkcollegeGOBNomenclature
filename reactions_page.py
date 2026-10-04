@@ -136,8 +136,14 @@ def prepared(smi):
     if one_carbon(m) and smi != "O=C=O":
         return lewis_layout(m)
     ald = [t[0] for t in m.GetSubstructMatches(ALDEHYDE_C)]
-    if ald:
-        m = Chem.AddHs(m, onlyOnAtoms=tuple(ald))
+    # In a salt, an ion with a single carbon (methylammonium) shows that carbon's H atoms too.
+    lone = []
+    for frag in Chem.GetMolFrags(m):
+        cs = [i for i in frag if m.GetAtomWithIdx(i).GetSymbol() == "C"]
+        if len(frag) < m.GetNumAtoms() and len(cs) == 1:
+            lone += cs
+    if ald or lone:
+        m = Chem.AddHs(m, onlyOnAtoms=tuple(ald + lone))
     rdDepictor.Compute2DCoords(m)
     triglyceride_layout(m)
     return m
