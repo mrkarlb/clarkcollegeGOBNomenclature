@@ -29,9 +29,29 @@ Fumarase adds water to fumarate. It runs in both directions; inside the cycle, t
 
 [[rxn pr_fum]]
 
-Aconitase runs an **elimination** and then an **addition**: it removes water from citrate to make a C=C, then adds the water back the other way around, moving the OH to the next carbon.
+### Moving an OH so it can be oxidized {#aconitase}
+
+The next steps of the cycle use three of this page's reaction types in a row, and each one sets up the next.
+
+Citrate's OH is on a carbon bonded to three other carbons: citrate is a **3° alcohol**, and a 3° alcohol [can't be oxidized](#alcohols). The cell needs to oxidize that part of the molecule, so the enzyme aconitase first moves the OH. It runs an **elimination**, removing water to make a C=C:
 
 [[rxn r_aconitase]]
+
+Then an **addition**, putting the water back on the other way around. The OH lands on the neighboring carbon, and the product, isocitrate, is a **2° alcohol**:
+
+[[rxn r_aconitase2]]
+
+The OH ends up on the carbon with *fewer* carbons attached, the opposite of what Markovnikov's rule describes for simple alkenes. The enzyme's active site decides where the OH goes, not the counting rule: regioselectivity again.
+
+Now the alcohol can be oxidized. Isocitrate dehydrogenase removes 2 H (picked up by NAD⁺), turning the 2° alcohol into a ketone:
+
+[[rxn r_idh1]]
+
+With the new C=O right next door, the carboxylate on the neighboring carbon can leave as CO₂, another **elimination**, called **decarboxylation**. The same enzyme carries out both steps, so the ketone never leaves the enzyme:
+
+[[rxn r_idh2]]
+
+Put together: **elimination, addition, oxidation, elimination**. The OH is moved so that it can be oxidized, and the oxidation sets up the loss of CO₂. This is one of the two steps where the citric acid cycle releases CO₂, the CO₂ you breathe out.
 
 ## Other additions to a C=C {#other-additions}
 

@@ -22,8 +22,11 @@ SP = [
 ("mal", "(2S)-2-hydroxybutanedioate", "(S)-malate", "O=C([O-])C[C@H](O)C(=O)[O-]"),
 ("oaa", "2-oxobutanedioate", "oxaloacetate", "O=C([O-])CC(=O)C(=O)[O-]"),
 ("succ", "butanedioate", "succinate", "O=C([O-])CCC(=O)[O-]"),
-("cit", "2-hydroxypropane-1,2,3-tricarboxylate", "citrate", "O=C([O-])CC(O)(CC(=O)[O-])C(=O)[O-]"),
+("cit", "2-hydroxypropane-1,2,3-tricarboxylate", "citrate; a 3° alcohol", "O=C([O-])CC(O)(CC(=O)[O-])C(=O)[O-]"),
 ("acon", "(1Z)-prop-1-ene-1,2,3-tricarboxylate", "cis-aconitate", "O=C([O-])/C=C(/CC(=O)[O-])C(=O)[O-]"),
+("isocit", "(1R,2S)-1-hydroxypropane-1,2,3-tricarboxylate", "isocitrate; a 2° alcohol", "O[C@H]([C@H](CC(=O)[O-])C(=O)[O-])C(=O)[O-]"),
+("oxsuc", "1-oxopropane-1,2,3-tricarboxylate", "oxalosuccinate; stays on the enzyme", "O=C(C(CC(=O)[O-])C(=O)[O-])C(=O)[O-]"),
+("akg", "2-oxopentanedioate", "α-ketoglutarate", "O=C(C(=O)[O-])CCC(=O)[O-]"),
 ("ole", "(9Z)-octadec-9-enoic acid", "oleic acid (olive oil); cis", "CCCCCCCC/C=C\\CCCCCCCC(=O)O"),
 ("ste", "octadecanoic acid", "stearic acid; saturated", "CCCCCCCCCCCCCCCCCC(=O)O"),
 ("ela", "(9E)-octadec-9-enoic acid", "elaidic acid, a trans fat", "CCCCCCCC/C=C/CCCCCCCC(=O)O"),
@@ -106,6 +109,7 @@ TX = [
 ("oh", "OH⁻", "hydroxide ion", "[OH-]"),
 ("o2", "O₂", "oxygen", "O=O"),
 ("co2t", "CO₂", "carbon dioxide", "O=C=O"),
+("hplus", "H⁺", "hydrogen ion", "[H+]"),
 ("glcf", "C₆H₁₂O₆", "glucose", "OC[C@H]1O[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O"),
 ]
 
@@ -126,6 +130,10 @@ RULES = {
  "ring_open":     ("elimination", "ring opening", "[CX4:1]1(-[OH1:2])-[C:3]-[C:4]-[C:5]-[C:6]-[O:7]1>>[C:1](=[O:2])-[C:3]-[C:4]-[C:5]-[C:6]-[O:7]", None, None),
  "ox_alcohol":    ("oxidation", "alcohol to carbonyl", "[CX4;!H0:1]-[OH1:2]>>[C:1]=[O:2].[H][H]", None, None),
  "ox_aldehyde":   ("oxidation", "aldehyde to acid", "[CX3;!$(C(=O)[O,N]);!H0:1]=[O:2].[OH2:3]>>[C:1](=[O:2])-[O:3].[H][H]", None, None),
+ "hydration_enzyme": ("addition", "hydration", "[C:1]=[C:2].[OH2:3]>>[C:1](-[O:3])-[C:2]", None, None),
+ "decarboxylation": ("elimination", "decarboxylation",
+                     "[CX3:1](=[O:2])([#6:7])-[CX4:3]-[CX3:4](=[O:5])-[O-:6].[#1+]>>[C:1](=[O:2])([#6:7])-[C:3].[C:4](=[O:5])=[O+0:6]",
+                     None, None),
  "dehydrogenation": ("oxidation", "C–C to C=C", "[CX4;!H0:1]-[CX4;!H0:2]>>[C:1]=[C:2].[H][H]", None, None),
  "reduction":     ("reduction", "carbonyl to alcohol", "[CX3;!$(C-[O,N]):1]=[O:2].[H][H]>>[C:1]-[O:2]", None, None),
  "esterification": ("condensation", "ester", "[CX3:1](=[O:2])-[OH1:3].[OH1:4]-[CX4:5]>>[C:1](=[O:2])-[O:4]-[C:5].[O:3]", None, None),
@@ -164,6 +172,9 @@ RX = [
 
 # hydration and dehydration
 ("r_aconitase", "dehydration", 1, [(1, "cit")], [(1, "acon"), (1, "h2o")], "aconitase", "citric acid cycle", "→"),
+("r_aconitase2", "hydration_enzyme", 1, [(1, "acon"), (1, "h2o")], [(1, "isocit")], "aconitase", "citric acid cycle", "→"),
+("r_idh1", "ox_alcohol", 1, [(1, "isocit")], [(1, "oxsuc"), (1, "2h")], "isocitrate dehydrogenase", "NAD⁺ → NADH + H⁺", "→"),
+("r_idh2", "decarboxylation", 1, [(1, "oxsuc"), (1, "hplus")], [(1, "akg"), (1, "co2t")], "isocitrate dehydrogenase", "CO₂ leaves", "→"),
 # other additions to alkenes
 ("r_hydrog", "hydrogenation", 1, [(1, "propene"), (1, "h2")], [(1, "propane")], "Ni or Pt catalyst", "", "→"),
 ("r_ole", "hydrogenation", 1, [(1, "ole"), (1, "h2")], [(1, "ste")], "Ni catalyst", "how margarine is made", "→"),
@@ -234,6 +245,14 @@ MAJMIN = [
   "H₃O⁺, heat", "", "three carbons on the C=C", "two carbons on the C=C", "minor"),
 ]
 
+# Enzyme steps that put the new group where the simple counting rule would NOT:
+# (reaction id, rule with a selector). The build requires the drawn product to be an
+# outcome that rule allows but doesn't pick, so the page's "opposite of Markovnikov"
+# statement is checked, not just asserted.
+AGAINST_RULE = [
+ ("r_aconitase2", "hydration"),
+]
+
 # Rules that must NOT apply: (id, rule, reactant species). The build fails if they do.
 NO_REACTION = [
  ("n_tbuoh", "ox_alcohol", ["tbuoh"]),          # 3° alcohols don't oxidize
@@ -282,7 +301,7 @@ PRACTICE = [
  ("p_galol", "x_galol", "products", "Draw the product of reducing this sugar's aldehyde.",
   "The CHO gains 2 H and becomes CH₂OH, giving a sugar alcohol, galactitol. In galactosemia, galactitol builds up in the lens of the eye and can cause cataracts."),
  ("p_acon", "r_aconitase", "type", "Which type of reaction is this, and what is its partner?",
-  "Elimination (dehydration): an OH and an H leave as water and a C=C forms. Its partner is addition (hydration), which the very next enzyme in the citric acid cycle carries out on the new C=C."),
+  "Elimination (dehydration): an OH and an H leave as water and a C=C forms. Its partner is addition (hydration), and aconitase runs that next itself, adding the water back so the OH lands on the neighboring carbon."),
  ("p_mdh", "r_mdh", "type", "Which type of reaction is this, and what is its partner?",
   "Oxidation: the 2° alcohol loses 2 H (picked up by NAD⁺) and becomes a ketone. Its partner is reduction."),
  ("p_lipase", "r_lipase", "type", "Which type of reaction is this, and what is its partner?",

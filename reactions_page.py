@@ -17,7 +17,7 @@ from rdkit.Chem import rdDepictor, rdFMCS
 
 from collections import Counter
 
-from reactions import MAJMIN, NO_REACTION, PARTNER, PRACTICE, RULES, RX, SP, TX
+from reactions import AGAINST_RULE, MAJMIN, NO_REACTION, PARTNER, PRACTICE, RULES, RX, SP, TX
 from render import style_name, svg_for
 from rxncheck import Rule, balance, check_reaction, key
 from sugars import fischer_chain, fischer_svg, haworth_svg, is_fischer, is_haworth
@@ -91,6 +91,17 @@ def verify():
             problems.append(f"  {mid} (minor): not a product the '{rule}' rule allows")
         elif want in picked:
             problems.append(f"  {mid} (minor): the rule picks this as the major product")
+    for rid, rule in AGAINST_RULE:
+        _, _, _, left, right, *_ = RX_BY[rid]
+        ins = [smiles_of(s) for c, s in left for _ in range(c)]
+        want = Counter()
+        for c, s in right:
+            for part in smiles_of(s).split("."):
+                want[key(part)] += c
+        if want not in [Counter(o["keys"]) for o in RULE_OBJ[rule].apply(ins, select=False)]:
+            problems.append(f"  {rid}: not a product the '{rule}' rule allows")
+        elif want in [Counter(o["keys"]) for o in RULE_OBJ[rule].apply(ins)]:
+            problems.append(f"  {rid}: the page says the enzyme goes against {rule}'s selector, but this is what it picks")
     for nid, rule, sps in NO_REACTION:
         if RULE_OBJ[rule].apply([smiles_of(s) for s in sps]):
             problems.append(f"  {nid}: '{rule}' applies to {sps}, but the page says no reaction")
@@ -108,6 +119,7 @@ def verify():
 
 # ---------------------------------------------------------------- rendering
 SHOWN = {}
+ALIGN_FALLBACK = set()
 USED, USED_RX, USED_PRACTICE, USED_MM = set(), set(), set(), set()
 
 
@@ -212,6 +224,31 @@ def triglyceride_layout(m):
     return len(placed) == m.GetNumAtoms()
 
 
+def straight_through(m):
+    """True if any atom's 2D drawing puts two of its bonds in a straight line where the
+    geometry says they shouldn't be: an atom with two or three bonds that isn't sp
+    (a triple bond or C=C=C). A quaternary carbon drawn as a cross is fine."""
+    conf = m.GetConformer()
+    for a in m.GetAtoms():
+        nb = [n.GetIdx() for n in a.GetNeighbors()]
+        if len(nb) not in (2, 3):
+            continue
+        if a.GetHybridization() == Chem.HybridizationType.SP:
+            continue
+        c = conf.GetAtomPosition(a.GetIdx())
+        vecs = []
+        for i in nb:
+            p_ = conf.GetAtomPosition(i)
+            v = (p_.x - c.x, p_.y - c.y)
+            n_ = math.hypot(*v) or 1.0
+            vecs.append((v[0] / n_, v[1] / n_))
+        for i in range(len(vecs)):
+            for j in range(i + 1, len(vecs)):
+                if vecs[i][0] * vecs[j][0] + vecs[i][1] * vecs[j][1] < -0.97:   # about 166°+
+                    return True
+    return False
+
+
 def aligned(smi, ref):
     """Draw smi with the atoms it shares with ref in the same positions as in ref,
     so a product sits the same way round as its starting material."""
@@ -230,6 +267,9 @@ def aligned(smi, ref):
     conf = ref.GetConformer()
     cmap = {j: Geometry.Point2D(conf.GetAtomPosition(i).x, conf.GetAtomPosition(i).y) for i, j in zip(rm, mm)}
     rdDepictor.Compute2DCoords(m, coordMap=cmap)
+    if straight_through(m):
+        ALIGN_FALLBACK.add(Chem.MolToSmiles(Chem.RemoveHs(m)))
+        return prepared(smi)        # lining up would distort it: draw it its own way
     return m
 
 
@@ -361,9 +401,10 @@ ARROWS["pair"] = ARROWS["⇌"]
 
 
 def arrow(kind, above, below):
-    width = min(max(len(above), len(below), 9) * 0.6 + 1.5, 26)   # em; long labels wrap past 26em
-    return (f'<span class="arrow" style="width:{width:.1f}em"><span class="ab">{html.escape(above)}</span>{ARROWS[kind]}'
-            f'<span class="be">{html.escape(below)}</span></span>')
+    width = min(max(len(above), len(below), 9) * 0.6 + 1.5, 9.5)   # em; longer labels wrap onto two lines
+    keep = lambda t: html.escape(t).replace(" + ", "\u00a0+\u00a0")   # never break "NADH + H⁺" at the plus
+    return (f'<span class="arrow" style="width:{width:.1f}em"><span class="ab">{keep(above)}</span>{ARROWS[kind]}'
+            f'<span class="be">{keep(below)}</span></span>')
 
 
 def side_list(side, mols=None, compact=False, scale=None, hscale=1.0):
@@ -431,7 +472,7 @@ def scheme(rid, show_tag=True, hide_products=False):
     compact = is_compact(left, right)
     atoms = sum(Chem.MolFromSmiles(SP_BY[s_][3]).GetNumHeavyAtoms() for _, s_ in left + right
                 if s_ in SP_BY and not is_haworth(SP_BY[s_][3]) and not is_fischer(SP_BY[s_][3]))
-    scale = 1.0 if atoms > 30 else None   # a reaction with many atoms in all is drawn a little smaller
+    scale = 1.0 if atoms > 24 else None   # a reaction with many atoms in all is drawn a little smaller
     # A reaction with a two-ring sugar (maltose, lactose) draws its Haworth rings smaller to fit one row.
     hscale = 0.6 if any(s_ in SP_BY and is_haworth(SP_BY[s_][3]) and
                         Chem.MolFromSmiles(SP_BY[s_][3]).GetRingInfo().NumRings() == 2
