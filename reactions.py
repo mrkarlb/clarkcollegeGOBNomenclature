@@ -184,7 +184,7 @@ RX = [
 ("r_lipase", "ester_hydrolysis", 3, [(1, "tristearin"), (3, "h2o")], [(1, "glycerol"), (3, "ste")], "lipase", "fat digestion", "→"),
 ("r_pephyd", "amide_hydrolysis", 1, [(1, "glyala"), (1, "h2o")], [(1, "gly"), (1, "ala")], "peptidase", "protein digestion", "→"),
 ("r_sapon", "saponification", 3, [(1, "tristearin"), (3, "oh")], [(1, "glycerol"), (3, "stearate")], "NaOH, heat", "soap making", "→"),
-("r_lactase", "glycoside_hydrolysis", 1, [(1, "lactose"), (1, "h2o")], [(1, "bgal"), (1, "bglc")], "lactase", "carbohydrate digestion", "→"),
+("r_lactase", "glycoside_hydrolysis", 1, [(1, "lactose"), (1, "h2o")], [(1, "bgal"), (1, "bglc")], "lactase", "digestion", "→"),
 # acid-base
 ("r_acidw", "acid_water", 1, [(1, "lacth"), (1, "h2o")], [(1, "lact"), (1, "h3o")], "", "", "⇌"),
 ("r_acidam", "acid_amine", 1, [(1, "acoh"), (1, "meam")], [(1, "meamm_ac")], "", "", "→"),

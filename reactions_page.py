@@ -207,14 +207,14 @@ def aligned(smi, ref):
     return m
 
 
-def species_fig(sid, mol=None, scale=None, top=None, bond_len=None):
+def species_fig(sid, mol=None, scale=None, top=None, bond_len=None, hscale=1.0):
     """mol: 2D layout lined up with the reaction; top: for an open-chain sugar, the atom drawn as C1."""
     USED.add(sid)
     _, name, note, smi = SP_BY[sid]
     alt = f"Structure of {name}" + (f" ({note})" if note else "")
     uid = _uid(f"r-{sid}")
     if is_haworth(smi):
-        svg = haworth_svg(uid, smi, alt + ", drawn as a Haworth projection")
+        svg = haworth_svg(uid, smi, alt + ", drawn as a Haworth projection", hscale)
     elif is_fischer(smi):
         svg = fischer_svg(uid, smi, alt + ", drawn as a Fischer projection", top)[0]
     else:
@@ -292,7 +292,7 @@ def has_long_chain(smi):
     return condense_chains(prepared(smi)).GetNumAtoms() < Chem.AddHs(m, onlyOnAtoms=()).GetNumAtoms()
 
 
-def item(coef, sid, mol=None, top=None, compact=False, scale=None):
+def item(coef, sid, mol=None, top=None, compact=False, scale=None, hscale=1.0):
     c = f'<span class="coef">{coef}</span>' if coef > 1 else ""
     if sid in TX_BY:
         return f'{c}<span class="chip">{TX_BY[sid][1]}</span>'
@@ -313,7 +313,7 @@ def item(coef, sid, mol=None, top=None, compact=False, scale=None):
                 f'<span class="nm">{coef} × {style_name(name)}</span>{cm}</figcaption></figure>')
     if compact:   # every structure in the reaction gets the same short bonds, so they stay to scale
         return c + species_fig(sid, mol=mol, scale=1.0, top=top, bond_len=COMPACT_BOND)
-    return c + species_fig(sid, mol=mol, scale=scale or RXN_SCALE, top=top)
+    return c + species_fig(sid, mol=mol, scale=scale or RXN_SCALE, top=top, hscale=hscale)
 
 
 def is_compact(*sides):
@@ -340,11 +340,11 @@ def arrow(kind, above, below):
             f'<span class="be">{html.escape(below)}</span></span>')
 
 
-def side_list(side, mols=None, compact=False, scale=None):
+def side_list(side, mols=None, compact=False, scale=None, hscale=1.0):
     out = []
     for i, (c, s) in enumerate(side):
         plus = '<span class="plus">+</span>' if i else ""
-        out.append(f'<span class="term">{plus}{item(c, s, (mols or {}).get(s), (mols or {}).get(("top", s)), compact, scale)}</span>')
+        out.append(f'<span class="term">{plus}{item(c, s, (mols or {}).get(s), (mols or {}).get(("top", s)), compact, scale, hscale)}</span>')
     return "".join(out)
 
 
@@ -406,7 +406,11 @@ def scheme(rid, show_tag=True, hide_products=False):
     atoms = sum(Chem.MolFromSmiles(SP_BY[s_][3]).GetNumHeavyAtoms() for _, s_ in left + right
                 if s_ in SP_BY and not is_haworth(SP_BY[s_][3]) and not is_fischer(SP_BY[s_][3]))
     scale = 1.0 if atoms > 30 else None   # a reaction with many atoms in all is drawn a little smaller
-    rhs = '<span class="unknown">?</span>' if hide_products else side_list(right, mols, compact, scale)
+    # A reaction with a two-ring sugar (maltose, lactose) draws its Haworth rings smaller to fit one row.
+    hscale = 0.6 if any(s_ in SP_BY and is_haworth(SP_BY[s_][3]) and
+                        Chem.MolFromSmiles(SP_BY[s_][3]).GetRingInfo().NumRings() == 2
+                        for _, s_ in left + right) else 1.0
+    rhs = '<span class="unknown">?</span>' if hide_products else side_list(right, mols, compact, scale, hscale)
     sentence = f"{words(left)} gives {'what product?' if hide_products else words(right)}"
     if kind == "pair":
         sentence = f"Forward ({above}): {words(left)} gives {words(right)}. Reverse ({below}): {words(right)} gives {words(left)}."
@@ -419,7 +423,7 @@ def scheme(rid, show_tag=True, hide_products=False):
         sentence = f"{type_words(rule).capitalize()}. " + sentence
     head = f'<div class="rxn-head">{tag_for(rule)}</div>' if show_tag else ""
     return (f'<figure class="rxn">{head}<p class="sr-only">{html.escape(sentence)}</p>'
-            f'<div class="rxn-row" aria-hidden="true">{side_list(left, mols, compact, scale)}{arrow(kind, above, below)}{rhs}</div></figure>')
+            f'<div class="rxn-row" aria-hidden="true">{side_list(left, mols, compact, scale, hscale)}{arrow(kind, above, below)}{rhs}</div></figure>')
 
 
 def noreaction_scheme(nid, label):

@@ -141,8 +141,8 @@ def _line(x1, y1, x2, y2, w=2):
     return f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke-width="{w}"/>'
 
 
-def _svg(uid, alt, w, h, lines, texts):
-    return (f'<svg class="mol haworth" viewBox="0 0 {w} {h}" width="{w}" height="{h}" role="img" '
+def _svg(uid, alt, w, h, lines, texts, scale=1.0):
+    return (f'<svg class="mol haworth" viewBox="0 0 {w} {h}" width="{round(w * scale)}" height="{round(h * scale)}" role="img" '
             f'aria-labelledby="t-{uid}" xmlns="http://www.w3.org/2000/svg"><title id="t-{uid}">{html.escape(alt)}</title>'
             f'<g style="stroke:var(--mol-c);stroke-linecap:round">{"".join(lines)}</g>'
             f'<g style="font-size:{FONT}px;font-family:\'Source Sans 3\',sans-serif">{"".join(texts)}</g></svg>')
@@ -165,7 +165,7 @@ def _label(m, sub, ring_atoms):
     return a.GetSymbol()
 
 
-def haworth_svg(uid, smiles, alt):
+def haworth_svg(uid, smiles, alt, scale=1.0):
     m = Chem.MolFromSmiles(smiles)
     rings = [_ring_order(m, r) for r in _pyranose_rings(m)]
     mh, conf = _embed(m)
@@ -248,7 +248,7 @@ def haworth_svg(uid, smiles, alt):
         lines += [_line(x1, y1, *trim(x1, y1, ox, oy)), _line(*trim(x4, y4, ox, oy), x4, y4)]
         texts.append(_t(ox, oy + 6, "O"))
     w = 196 + (dx if bridge else 0)
-    return _svg(uid, alt, w, 200, lines, texts)
+    return _svg(uid, alt, w, 200, lines, texts, scale)
 
 
 # ---------------------------------------------------------------- Fischer
