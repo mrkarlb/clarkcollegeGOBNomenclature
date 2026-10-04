@@ -44,9 +44,12 @@ def _slim_style(m):
 SCALE = 1.5  # display size relative to the drawing
 
 
-def svg_for(sid, smiles, alt, locants=None, show_cip=False):
+def svg_for(sid, smiles, alt, locants=None, show_cip=False, mol=None, scale=None):
+    """mol: optional RDKit molecule with 2D coordinates already set (used to line up
+    a product with its starting material). scale: display size (default SCALE)."""
     generic = "*" in smiles
-    mol = Chem.MolFromSmiles(smiles.replace("[X]", "[Cl]"))
+    if mol is None:
+        mol = Chem.MolFromSmiles(smiles.replace("[X]", "[Cl]"))
     if mol is None:
         raise ValueError(f"bad SMILES for {sid}: {smiles}")
     for a in mol.GetAtoms():
@@ -90,7 +93,17 @@ def svg_for(sid, smiles, alt, locants=None, show_cip=False):
     svg = re.sub(r"\s*\n\s*", "", svg)
     tid = f"t-{sid}"
     return (
-        f'<svg class="mol{" generic" if generic else ""}" viewBox="0 0 {w} {h}" width="{round(w * SCALE)}" height="{round(h * SCALE)}" '
+        f'<svg class="mol{" generic" if generic else ""}" viewBox="0 0 {w} {h}" width="{round(w * (scale or SCALE))}" height="{round(h * (scale or SCALE))}" '
         f'role="img" aria-labelledby="{tid}" xmlns="http://www.w3.org/2000/svg">'
         f'<title id="{tid}">{html.escape(alt)}</title>{svg}</svg>'
     )
+
+
+def style_name(name):
+    """Italicize locant letters and stereodescriptors the way IUPAC prints them."""
+    n = html.escape(name)
+    n = re.sub(r"(?<![A-Za-z])(N)(?=[,\-])", r"<i>\1</i>", n)
+    n = re.sub(r"\b(tert|sec|cis|trans)-", r"<i>\1</i>-", n)
+    n = re.sub(r"(?<=[\d(,])([RSEZ])(?=[,)])", r"<i>\1</i>", n)
+    n = re.sub(r"(\d)H-", r"\1<i>H</i>-", n)
+    return n

@@ -1,0 +1,357 @@
+"""Build the Reactions page (reactions.html).
+
+Called from build.py. Checks every reaction (rxncheck.py) and every name
+(OPSIN), then renders content-reactions/*.md with reaction schemes.
+"""
+import glob
+import html
+import os
+import re
+import sys
+
+import markdown
+from py2opsin import py2opsin
+from rdkit import Chem, Geometry
+from rdkit.Chem import rdDepictor, rdFMCS
+
+from reactions import NO_REACTION, PARTNER, PRACTICE, RULES, RX, SP, TX
+from render import style_name, svg_for
+from rxncheck import Rule, check_reaction
+from sugars import fischer_chain, fischer_svg, haworth_svg, is_fischer, is_haworth
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+SP_BY = {s[0]: s for s in SP}
+TX_BY = {t[0]: t for t in TX}
+RX_BY = {r[0]: r for r in RX}
+NR_BY = {n[0]: n for n in NO_REACTION}
+PR_BY = {p[0]: p for p in PRACTICE}
+STEREO_IN_NAME = re.compile(r"\((?:\d*[RSEZrs],?)+\)|\bcis-|\btrans-|(?:^|-)[DL]-|[αβ]-|alpha|beta")
+RULE_OBJ = {k: (Rule(k, v[1], v[2], v[3], v[4]) if v[2] else None) for k, v in RULES.items()}
+
+
+def smiles_of(sid):
+    return SP_BY[sid][3] if sid in SP_BY else TX_BY[sid][3]
+
+
+def words_of(sid):
+    return SP_BY[sid][1] if sid in SP_BY else TX_BY[sid][2]
+
+
+# ---------------------------------------------------------------- checks
+def _canon(smi, stereo):
+    m = Chem.MolFromSmiles(smi)
+    if not stereo:
+        Chem.RemoveStereochemistry(m)
+    return Chem.MolToSmiles(m)
+
+
+def verify():
+    problems = []
+    opsin = py2opsin([s[1] for s in SP])
+    for s, o in zip(SP, opsin):
+        stereo = bool(STEREO_IN_NAME.search(s[1]))
+        if not o or _canon(s[3], stereo) != _canon(o, stereo):
+            problems.append(f"  {s[0]}: '{s[1]}' -> OPSIN {o or 'could not parse'}; ours {s[3]}")
+    for rid, rule, steps, left, right, *_ in RX:
+        L = [(c, smiles_of(s)) for c, s in left]
+        R = [(c, smiles_of(s)) for c, s in right]
+        if isinstance(rule, tuple):
+            fwd, rev = rule
+            for p in check_reaction(RULE_OBJ[fwd], steps, L, R):
+                problems.append(f"  {rid} (forward, {fwd}): {p}")
+            for p in check_reaction(RULE_OBJ[rev], steps, R, L):
+                problems.append(f"  {rid} (reverse, {rev}): {p}")
+            if RULES[rev][0] != PARTNER.get(RULES[fwd][0]):
+                problems.append(f"  {rid}: {fwd} and {rev} are not partner reactions")
+        else:
+            for p in check_reaction(RULE_OBJ[rule], steps, L, R):
+                problems.append(f"  {rid} ({rule}): {p}")
+    for nid, rule, sps in NO_REACTION:
+        if RULE_OBJ[rule].apply([smiles_of(s) for s in sps]):
+            problems.append(f"  {nid}: '{rule}' applies to {sps}, but the page says no reaction")
+    for pid, ref, mode, *_ in PRACTICE:
+        if (mode == "noreaction") != (ref in NR_BY) or (ref not in RX_BY and ref not in NR_BY):
+            problems.append(f"  practice {pid}: bad reference {ref} for mode {mode}")
+    if problems:
+        print("REACTION CHECK FAILED:\n" + "\n".join(problems))
+        sys.exit(1)
+    print(f"Reaction check passed: {len(SP)} structures named, {len(RX)} reactions "
+          f"({sum(isinstance(r[1], tuple) for r in RX)} checked both ways), {len(NO_REACTION)} no-reaction cases.")
+
+
+# ---------------------------------------------------------------- rendering
+SHOWN = {}
+USED, USED_RX, USED_PRACTICE = set(), set(), set()
+
+
+def _uid(base):
+    SHOWN[base] = SHOWN.get(base, 0) + 1
+    return base if SHOWN[base] == 1 else f"{base}-{SHOWN[base]}"
+
+
+RXN_SCALE = 1.35  # structures inside reaction schemes are drawn a little smaller
+
+
+def prepared(smi):
+    """Molecule for drawing. A one-carbon molecule shows its H atoms, since a bare
+    line or a lone label is hard to read as methanol or methanal."""
+    m = Chem.MolFromSmiles(smi)
+    cs = [a for a in m.GetAtoms() if a.GetSymbol() == "C"]
+    if len(cs) == 1 and m.GetNumHeavyAtoms() > 1:
+        h = cs[0].GetTotalNumHs()
+        cs[0].SetProp("atomLabel", "C" + ("H" if h else "") + (f"<sub>{h}</sub>" if h > 1 else ""))
+    rdDepictor.Compute2DCoords(m)
+    triglyceride_layout(m)
+    return m
+
+
+TG = Chem.MolFromSmarts("[CH2:1](O[CX3](=O)[#6])[CH1:2](O[CX3](=O)[#6])[CH2:3](O[CX3](=O)[#6])")
+
+
+def triglyceride_layout(m):
+    """Textbook layout for a triglyceride: glycerol drawn vertically, three acyl
+    chains running to the right in parallel rows, C=O pointing up."""
+    match = m.GetSubstructMatch(TG)
+    if not match:
+        return False
+    glyc = [match[0], match[5], match[10]]         # the three glycerol carbons
+    conf = m.GetConformer()
+    gap, dx, dy = 3.0, 1.3, 0.75
+    placed = set()
+    for row, cg in enumerate(glyc):
+        y = -row * gap
+        conf.SetAtomPosition(cg, (0.0, y, 0.0))
+        placed.add(cg)
+        o_e = next(n.GetIdx() for n in m.GetAtomWithIdx(cg).GetNeighbors() if n.GetSymbol() == "O")
+        chain, prev, cur = [], cg, o_e
+        while cur is not None:                      # walk O–C(=O)–C–C–... away from glycerol
+            chain.append(cur)
+            nxt = [n.GetIdx() for n in m.GetAtomWithIdx(cur).GetNeighbors()
+                   if n.GetIdx() != prev and n.GetIdx() not in glyc and n.GetSymbol() in "CO"
+                   and m.GetBondBetweenAtoms(cur, n.GetIdx()).GetBondTypeAsDouble() == 1]
+            prev, cur = cur, (nxt[0] if nxt else None)
+        for k, idx in enumerate(chain, 1):
+            conf.SetAtomPosition(idx, (k * dx, y + (dy if k % 2 else 0.0), 0.0))
+            placed.add(idx)
+        carbonyl_c = chain[1]
+        o_dbl = next(n.GetIdx() for n in m.GetAtomWithIdx(carbonyl_c).GetNeighbors()
+                     if m.GetBondBetweenAtoms(carbonyl_c, n.GetIdx()).GetBondTypeAsDouble() == 2)
+        cx, cy = 2 * dx, y
+        conf.SetAtomPosition(o_dbl, (cx, cy - 1.5, 0.0))   # C=O points down, into the gap between rows
+        placed.add(o_dbl)
+    return len(placed) == m.GetNumAtoms()
+
+
+def aligned(smi, ref):
+    """Draw smi with the atoms it shares with ref in the same positions as in ref,
+    so a product sits the same way round as its starting material."""
+    m = prepared(smi)
+    if ref is None:
+        return m
+    res = rdFMCS.FindMCS([ref, m], timeout=2, atomCompare=rdFMCS.AtomCompare.CompareElements,
+                         bondCompare=rdFMCS.BondCompare.CompareAny, ringMatchesRingOnly=True,
+                         completeRingsOnly=True)
+    if res.numAtoms < 3 or res.numAtoms < 0.7 * m.GetNumHeavyAtoms():
+        return m   # too little in common (e.g. a dipeptide vs. one amino acid): draw it its own way
+    patt = Chem.MolFromSmarts(res.smartsString)
+    rm, mm = ref.GetSubstructMatch(patt), m.GetSubstructMatch(patt)
+    if not rm or not mm:
+        return m
+    conf = ref.GetConformer()
+    cmap = {j: Geometry.Point2D(conf.GetAtomPosition(i).x, conf.GetAtomPosition(i).y) for i, j in zip(rm, mm)}
+    rdDepictor.Compute2DCoords(m, coordMap=cmap)
+    return m
+
+
+def species_fig(sid, mol=None, scale=None, top=None):
+    """mol: 2D layout lined up with the reaction; top: for an open-chain sugar, the atom drawn as C1."""
+    USED.add(sid)
+    _, name, note, smi = SP_BY[sid]
+    alt = f"Structure of {name}" + (f" ({note})" if note else "")
+    uid = _uid(f"r-{sid}")
+    if is_haworth(smi):
+        svg = haworth_svg(uid, smi, alt + ", drawn as a Haworth projection")
+    elif is_fischer(smi):
+        svg = fischer_svg(uid, smi, alt + ", drawn as a Fischer projection", top)[0]
+    else:
+        svg = svg_for(uid, smi, alt, mol=mol if mol is not None else prepared(smi), scale=scale)
+    cm = f'<span class="cm">{html.escape(note)}</span>' if note else ""
+    return (f'<figure class="fig"><div class="pic">{svg}</div>'
+            f'<figcaption><span class="nm">{style_name(name)}</span>{cm}</figcaption></figure>')
+
+
+def item(coef, sid, mol=None, top=None):
+    c = f'<span class="coef">{coef}</span>' if coef > 1 else ""
+    if sid in TX_BY:
+        return f'{c}<span class="chip">{TX_BY[sid][1]}</span>'
+    big = Chem.MolFromSmiles(SP_BY[sid][3]).GetNumHeavyAtoms() > 30
+    return c + species_fig(sid, mol=mol, scale=0.85 if big else RXN_SCALE, top=top)
+
+
+ARROWS = {
+    "→": '<svg viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true" focusable="false">'
+         '<line x1="2" y1="11" x2="96" y2="11" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke"/>'
+         '<path d="M86 4 L98 11 L86 18" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>',
+    "⇌": '<svg viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true" focusable="false">'
+         '<line x1="2" y1="7" x2="96" y2="7" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke"/>'
+         '<path d="M86 1 L98 7" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke"/>'
+         '<line x1="4" y1="15" x2="98" y2="15" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke"/>'
+         '<path d="M14 21 L2 15" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>',
+}
+ARROWS["pair"] = ARROWS["⇌"]
+
+
+def arrow(kind, above, below):
+    width = min(max(len(above), len(below), 12) * 0.62 + 2, 26)   # em; long labels wrap past 26em
+    return (f'<span class="arrow" style="width:{width:.1f}em"><span class="ab">{html.escape(above)}</span>{ARROWS[kind]}'
+            f'<span class="be">{html.escape(below)}</span></span>')
+
+
+def side_list(side, mols=None):
+    out = []
+    for i, (c, s) in enumerate(side):
+        plus = '<span class="plus">+</span>' if i else ""
+        out.append(f'<span class="term">{plus}{item(c, s, (mols or {}).get(s), (mols or {}).get(("top", s)))}</span>')
+    return "".join(out)
+
+
+def layout(left, right):
+    """Coordinates for every drawn species in a reaction, lined up to the largest starting material."""
+    drawn = [s for _, s in left + right if s in SP_BY]
+    lefts = [s for _, s in left if s in SP_BY]
+    if not lefts:
+        return {}
+    ref_id = max(lefts, key=lambda s: Chem.MolFromSmiles(SP_BY[s][3]).GetNumHeavyAtoms())
+    ref = prepared(SP_BY[ref_id][3])
+    mols = {ref_id: ref}
+    for s in drawn:
+        if s not in mols:
+            mols[s] = aligned(SP_BY[s][3], ref)
+    # Open-chain sugars: draw each product with the same carbon on top as the starting sugar.
+    ref_smi = SP_BY[ref_id][3]
+    if is_fischer(ref_smi):
+        rm = Chem.MolFromSmiles(ref_smi)
+        top_ref = fischer_chain(rm)[0]
+        for s in drawn:
+            if s != ref_id and is_fischer(SP_BY[s][3]):
+                pm = Chem.MolFromSmiles(SP_BY[s][3])
+                res = rdFMCS.FindMCS([rm, pm], timeout=2, atomCompare=rdFMCS.AtomCompare.CompareElements,
+                                     bondCompare=rdFMCS.BondCompare.CompareAny)
+                patt = Chem.MolFromSmarts(res.smartsString)
+                for r_match in rm.GetSubstructMatches(patt, uniquify=False, useChirality=False):
+                    if top_ref in r_match:
+                        p_match = pm.GetSubstructMatch(patt)
+                        mols[("top", s)] = p_match[r_match.index(top_ref)]
+                        break
+    return mols
+
+
+def words(side):
+    return " plus ".join((f"{c} " if c > 1 else "") + words_of(s) for c, s in side)
+
+
+def tag_for(rule):
+    if isinstance(rule, tuple):
+        a, b = RULES[rule[0]], RULES[rule[1]]
+        return f'<span class="rtype">{a[0]} ⇄ {b[0]}</span>'
+    side, specific = RULES[rule][0], RULES[rule][1]
+    label = side + (f" · {specific}" if specific and specific != side else "")
+    return f'<span class="rtype">{html.escape(label)}</span>'
+
+
+def type_words(rule):
+    if isinstance(rule, tuple):
+        return f"{RULES[rule[0]][0]} and its partner, {RULES[rule[1]][0]}"
+    return RULES[rule][0] + (f" ({RULES[rule][1]})" if RULES[rule][1] else "")
+
+
+def scheme(rid, show_tag=True, hide_products=False):
+    USED_RX.add(rid)
+    _, rule, _, left, right, above, below, kind = RX_BY[rid]
+    mols = layout(left, right)
+    rhs = '<span class="unknown">?</span>' if hide_products else side_list(right, mols)
+    sentence = f"{words(left)} gives {'what product?' if hide_products else words(right)}"
+    if kind == "pair":
+        sentence = f"Forward ({above}): {words(left)} gives {words(right)}. Reverse ({below}): {words(right)} gives {words(left)}."
+    else:
+        if kind == "⇌":
+            sentence = sentence.replace(" gives ", " is in equilibrium with ")
+        extras = "; ".join(x for x in (above, below) if x)
+        sentence = "Reaction: " + sentence + (f" ({extras})." if extras else ".")
+    if show_tag:
+        sentence = f"{type_words(rule).capitalize()}. " + sentence
+    head = f'<div class="rxn-head">{tag_for(rule)}</div>' if show_tag else ""
+    return (f'<figure class="rxn">{head}<p class="sr-only">{html.escape(sentence)}</p>'
+            f'<div class="rxn-row" aria-hidden="true">{side_list(left, mols)}{arrow(kind, above, below)}{rhs}</div></figure>')
+
+
+def noreaction_scheme(nid, label):
+    _, rule, sps = NR_BY[nid]
+    left = [(1, s) for s in sps if s in SP_BY]
+    sentence = f"{words(left)}, {label}, gives what?"
+    return (f'<figure class="rxn"><p class="sr-only">{html.escape(sentence)}</p><div class="rxn-row" aria-hidden="true">'
+            f'{side_list(left)}{arrow("→", label, "")}<span class="unknown">?</span></div></figure>')
+
+
+def practice(pid):
+    USED_PRACTICE.add(pid)
+    _, ref, mode, prompt, why = PR_BY[pid]
+    q = f'<p class="q"><strong>{html.escape(prompt)}</strong></p>'
+    if mode == "products":
+        body = scheme(ref, show_tag=False, hide_products=True)
+        ans = scheme(ref) + f"<p>{html.escape(why)}</p>"
+    elif mode == "type":
+        body = scheme(ref, show_tag=False)
+        ans = f'<p class="ans">{html.escape(type_words(RX_BY[ref][1]).capitalize())}</p><p>{html.escape(why)}</p>'
+    else:
+        body = noreaction_scheme(ref, RULES[NR_BY[ref][1]][0])
+        ans = f'<p class="ans">No reaction</p><p>{html.escape(why)}</p>'
+    return (f'<div class="practice">{q}{body}<details class="answer"><summary>Show answer</summary>'
+            f"{ans}</details></div>")
+
+
+def oxladder(ids):
+    lis = "".join(f"<li>{species_fig(s, scale=RXN_SCALE)}</li>" for s in ids)
+    return (f'<ol class="oxladder" aria-label="From least to most oxidized carbon: '
+            f'{", ".join(SP_BY[s][1] for s in ids)}">{lis}</ol>')
+
+
+def expand(md):
+    def repl(m):
+        kind, *args = m.group(1).split()
+        if kind == "rxn":
+            out = scheme(args[0])
+        elif kind == "practice":
+            out = practice(args[0])
+        elif kind == "fig":
+            out = species_fig(args[0])
+        elif kind == "figs":
+            out = '<div class="figrow">' + "".join(species_fig(a) for a in args) + "</div>"
+        elif kind == "oxladder":
+            out = oxladder(args)
+        else:
+            raise ValueError(f"unknown shortcode [[{m.group(1)}]]")
+        return f"\n\n{out}\n\n"
+    return re.sub(r"^\[\[(.+?)\]\]\s*$", repl, md, flags=re.M)
+
+
+def sections():
+    out = []
+    for path in sorted(glob.glob(os.path.join(ROOT, "content-reactions", "*.md"))):
+        md = open(path, encoding="utf-8").read()
+        title, sid = re.match(r"#\s+(.+?)\s+\{#([\w-]+)\}", md).groups()
+        h = markdown.markdown(expand(md), extensions=["tables", "attr_list", "md_in_html"])
+        h = h.replace("<table>", '<div class="table-wrap"><table>').replace("</table>", "</table></div>")
+        out.append((sid, title, h))
+    return out
+
+
+def report_unused():
+    notes = []
+    for label, allv, used in (("structures", SP_BY, USED), ("reactions", RX_BY, USED_RX),
+                              ("practice problems", PR_BY, USED_PRACTICE)):
+        missing = sorted(set(allv) - used)
+        if missing:
+            notes.append(f"{label} not shown: " + ", ".join(missing))
+    if notes:
+        print("Note (reactions page): " + "; ".join(notes))

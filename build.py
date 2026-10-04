@@ -18,7 +18,7 @@ import markdown
 from py2opsin import py2opsin
 from rdkit import Chem, RDLogger
 
-from render import svg_for
+from render import style_name, svg_for
 from structures import LOCANTS, PRACTICE, S, SHOW_CIP
 
 RDLogger.DisableLog("rdApp.*")
@@ -62,16 +62,6 @@ def verify():
 
 
 # ---------------------------------------------------------------- name styling
-def style_name(name):
-    """Italicize locant letters and stereodescriptors the way IUPAC prints them."""
-    n = html.escape(name)
-    n = re.sub(r"(?<![A-Za-z])(N)(?=[,\-])", r"<i>\1</i>", n)
-    n = re.sub(r"\b(tert|sec|cis|trans)-", r"<i>\1</i>-", n)
-    n = re.sub(r"(?<=[\d(,])([RSEZ])(?=[,)])", r"<i>\1</i>", n)
-    n = re.sub(r"(\d)H-", r"\1<i>H</i>-", n)
-    return n
-
-
 def alt_for(sid):
     s = BY_ID[sid]
     alt = f"Structure of {s[2]}"
@@ -253,23 +243,59 @@ def build_sections(practice_smiles):
     return sections
 
 
+NAMING_META = dict(
+    PAGE_TITLE="Naming Organic Compounds",
+    META_DESC="A guide to IUPAC naming of organic compounds for students preparing for health-profession careers. "
+              "CHEM&amp;131, Clark College.",
+    HEADER_SUB="A guide to IUPAC nomenclature for students preparing for health-profession careers. "
+               "Adapted from the handouts of Dr. Jan Simek, Cal Poly San Luis Obispo.",
+    FOOTER_FILE="footer_naming.html",
+)
+REACTIONS_META = dict(
+    PAGE_TITLE="Organic Reactions in the Body",
+    META_DESC="How to recognize the reaction types your body runs: oxidation and reduction, addition and elimination, "
+              "condensation and hydrolysis. CHEM&amp;131, Clark College.",
+    HEADER_SUB="The reaction types your body runs, and how to recognize them from the functional groups that react "
+               "and the groups that form. For students preparing for health-profession careers.",
+    FOOTER_FILE="footer_reactions.html",
+)
+PAGES = [("index.html", "Naming"), ("reactions.html", "Reactions")]
+
+
+def render_page(filename, meta, sections, updated):
+    toc = "".join(f'<a href="#{sid}" data-target="{sid}">{html.escape(t)}</a>' for sid, t, _ in sections)
+    main_html = "".join(f'<section class="block" id="{sid}-sec">{h}</section>' for sid, _, h in sections)
+    nav = "".join(f'<a href="{"./" if f == "index.html" else f}"{" aria-current=\"page\"" if f == filename else ""}>{label}</a>'
+                  for f, label in PAGES)
+    page = open(os.path.join(ROOT, "template.html"), encoding="utf-8").read()
+    footer = open(os.path.join(ROOT, meta["FOOTER_FILE"]), encoding="utf-8").read().rstrip()
+    for k, v in (("{{PAGE_TITLE}}", meta["PAGE_TITLE"]), ("{{META_DESC}}", meta["META_DESC"]),
+                 ("{{HEADER_SUB}}", meta["HEADER_SUB"]), ("{{PAGE_NAV}}", nav), ("{{FOOTER}}", footer),
+                 ("{{TOC}}", toc), ("{{MAIN}}", main_html), ("{{UPDATED}}", updated)):
+        page = page.replace(k, v)
+    leftover = re.findall(r"\{\{[A-Z_]+\}\}", page)
+    if leftover:
+        raise ValueError(f"{filename}: unfilled template fields {leftover}")
+    with open(os.path.join(OUT, filename), "w", encoding="utf-8") as f:
+        f.write(page)
+    print(f"Wrote _site/{filename} ({len(page) // 1024} KB, {len(sections)} sections).")
+
+
 def main():
+    import reactions_page
     practice_smiles = verify()
+    reactions_page.verify()
     sections = build_sections(practice_smiles)
     unused = sorted(set(BY_ID) - USED)
     if unused:
         print("Note: structures not shown on the page:", ", ".join(unused))
     now = datetime.datetime.now(ZoneInfo("America/Los_Angeles"))
     updated = now.strftime("%B %-d, %Y")
-    toc = "".join(f'<a href="#{sid}" data-target="{sid}">{html.escape(t)}</a>' for sid, t, _ in sections)
-    main_html = "".join(f'<section class="block" id="{sid}-sec">{h}</section>' for sid, _, h in sections)
-    page = open(os.path.join(ROOT, "template.html"), encoding="utf-8").read()
-    page = page.replace("{{TOC}}", toc).replace("{{MAIN}}", main_html).replace("{{UPDATED}}", updated)
     os.makedirs(OUT, exist_ok=True)
-    with open(os.path.join(OUT, "index.html"), "w", encoding="utf-8") as f:
-        f.write(page)
+    render_page("index.html", NAMING_META, sections, updated)
+    render_page("reactions.html", REACTIONS_META, reactions_page.sections(), updated)
+    reactions_page.report_unused()
     open(os.path.join(OUT, ".nojekyll"), "w").close()
-    print(f"Wrote _site/index.html ({len(page) // 1024} KB, {len(sections)} sections).")
 
 
 if __name__ == "__main__":
