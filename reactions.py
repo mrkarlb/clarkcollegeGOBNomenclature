@@ -16,7 +16,8 @@ SP = [
 ("dibr", "1,2-dibromopropane", "", "CC(Br)CBr"),
 ("chlpr", "2-chloropropane", "", "CC(C)Cl"),
 ("bu2ol", "butan-2-ol", "", "CCC(C)O"),
-("bu2ene", "(2E)-but-2-ene", "major product: more carbons on the C=C", "C/C=C/C"),
+("bu2ene", "(2E)-but-2-ene", "trans shown; the cis isomer also forms", "C/C=C/C"),
+("prop1ol", "propan-1-ol", "", "CCCO"),
 ("fum", "(2E)-but-2-enedioate", "fumarate", "O=C([O-])/C=C/C(=O)[O-]"),
 ("mal", "(2S)-2-hydroxybutanedioate", "(S)-malate", "O=C([O-])C[C@H](O)C(=O)[O-]"),
 ("oaa", "2-oxobutanedioate", "oxaloacetate", "O=C([O-])CC(=O)C(=O)[O-]"),
@@ -67,6 +68,9 @@ SP = [
 # practice problems
 ("ibut", "2-methylprop-1-ene", "isobutylene", "C=C(C)C"),
 ("pen3ol", "pentan-3-ol", "", "CCC(O)CC"),
+("mb2ol", "2-methylbutan-2-ol", "", "CCC(C)(C)O"),
+("mb2ene", "2-methylbut-2-ene", "", "CC=C(C)C"),
+("mb1ene", "2-methylbut-1-ene", "", "C=C(C)CC"),
 ("pen2ene", "pent-2-ene", "cis and trans both form", "CC=CCC"),
 ("cpent", "cyclopentene", "", "C1=CCCC1"),
 ("cpentane", "cyclopentane", "", "C1CCCC1"),
@@ -159,7 +163,6 @@ RX = [
 ("pr_pep", ("amidation", "amide_hydrolysis"), 1, [(1, "gly"), (1, "ala")], [(1, "glyala"), (1, "h2o")], "condensation (ribosome)", "hydrolysis (peptidase)", "pair"),
 
 # hydration and dehydration
-("r_dehyd", "dehydration", 1, [(1, "bu2ol")], [(1, "bu2ene"), (1, "h2o")], "H₃O⁺, heat", "", "→"),
 ("r_aconitase", "dehydration", 1, [(1, "cit")], [(1, "acon"), (1, "h2o")], "aconitase", "citric acid cycle", "→"),
 # other additions to alkenes
 ("r_hydrog", "hydrogenation", 1, [(1, "propene"), (1, "h2")], [(1, "propane")], "Ni or Pt catalyst", "", "→"),
@@ -216,6 +219,21 @@ RX = [
 ("x_malt", "glycoside_hydrolysis", 1, [(1, "maltose"), (1, "h2o")], [(1, "aglc"), (1, "aglc")], "maltase", "", "→"),
 ]
 
+# Major and minor products, for showing Markovnikov's and Zaitsev's rules side by side.
+# (id, rule, rule_name, reactants, major, minor, above_arrow, below_arrow, major_why, minor_why, minor_label)
+# The build requires: the major products are what the rule picks (its selector); the minor
+# products are another outcome the same rule allows, but not the one it picks; both balance.
+MAJMIN = [
+ ("m_hydra", "hydration", "Markovnikov's rule", [(1, "propene"), (1, "h2o")], [(1, "ipa")], [(1, "prop1ol")],
+  "H₃O⁺ catalyst", "", "OH on the carbon with more carbons attached", "OH on the end carbon",
+  "minor (little or none forms)"),
+ ("m_dehyd", "dehydration", "Zaitsev's rule", [(1, "bu2ol")], [(1, "bu2ene"), (1, "h2o")], [(1, "but1ene"), (1, "h2o")],
+  "H₃O⁺, heat", "", "more carbons on the C=C (H from the CH₂)", "fewer carbons on the C=C (H from the CH₃)",
+  "minor"),
+ ("m_mb2ol", "dehydration", "Zaitsev's rule", [(1, "mb2ol")], [(1, "mb2ene"), (1, "h2o")], [(1, "mb1ene"), (1, "h2o")],
+  "H₃O⁺, heat", "", "three carbons on the C=C", "two carbons on the C=C", "minor"),
+]
+
 # Rules that must NOT apply: (id, rule, reactant species). The build fails if they do.
 NO_REACTION = [
  ("n_tbuoh", "ox_alcohol", ["tbuoh"]),          # 3° alcohols don't oxidize
@@ -233,6 +251,8 @@ PRACTICE = [
   "Water adds across the C=C, following Markovnikov's rule: the H goes to the CH₂ end (the carbon with more hydrogens), and the OH goes to the carbon with more carbons attached (here, two). The product is a 3° alcohol."),
  ("p_dehyd", "x_dehyd", "products", "Draw the organic product of dehydration.",
   "Removing the OH and an H from a neighboring carbon makes a C=C. Both neighbors are equivalent here, so Zaitsev's rule has no choice to make: there is only one alkene, pent-2-ene."),
+ ("p_zaitsev", "m_mb2ol", "majmin", "Dehydrating this alcohol can give either alkene, A or B. Which is the major product, and which rule decides?",
+  "B, 2-methylbut-2-ene. Zaitsev's rule: the H comes off the neighboring carbon with fewer hydrogens. The OH carbon's neighbors are two CH₃ groups and one CH₂; taking the H from the CH₂ puts three carbons on the C=C, while taking it from a CH₃ puts only two."),
  ("p_hydrog", "x_hydrog", "products", "Draw the product.",
   "H₂ adds one H to each carbon of the C=C, giving the saturated ring."),
  ("p_hbr", "x_hbr", "products", "Draw the major product.",

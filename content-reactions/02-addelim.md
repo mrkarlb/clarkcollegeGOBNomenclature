@@ -11,9 +11,11 @@ When the two pieces are H and OH (water), the addition is called **hydration** a
 
 **Which carbon gets the OH?** When the two carbons of the C=C aren't the same, the H adds to the carbon that already has **more hydrogens**, and the OH goes to the carbon with **more carbons attached**. This is **Markovnikov's rule**, and it applies to every addition of H–X across a C=C (H–OH, H–Cl, H–Br). In propene, it puts the OH on the middle carbon: propan-2-ol, not propan-1-ol.
 
+[[majmin m_hydra]]
+
 **Dehydration** removes the OH and an H from a neighboring carbon. When there's a choice of neighbors, the major product is the alkene with **more carbons attached to the C=C**. This is **Zaitsev's rule**: the H comes off the neighboring carbon that has **fewer hydrogens**.
 
-[[rxn r_dehyd]]
+[[majmin m_dehyd]]
 
 Addition and elimination each have a rule for which carbon reacts. Markovnikov's rule tells you where the pieces go when they add; Zaitsev's rule tells you which double bond forms when they leave.
 
@@ -78,6 +80,8 @@ The new OH on carbon 1 can point either down (**α**) or up (**β**) in the ring
 [[practice p_hydra]]
 
 [[practice p_dehyd]]
+
+[[practice p_zaitsev]]
 
 [[practice p_hydrog]]
 

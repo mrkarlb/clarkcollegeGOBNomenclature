@@ -15,9 +15,11 @@ from py2opsin import py2opsin
 from rdkit import Chem, Geometry
 from rdkit.Chem import rdDepictor, rdFMCS
 
-from reactions import NO_REACTION, PARTNER, PRACTICE, RULES, RX, SP, TX
+from collections import Counter
+
+from reactions import MAJMIN, NO_REACTION, PARTNER, PRACTICE, RULES, RX, SP, TX
 from render import style_name, svg_for
-from rxncheck import Rule, check_reaction
+from rxncheck import Rule, balance, check_reaction, key
 from sugars import fischer_chain, fischer_svg, haworth_svg, is_fischer, is_haworth
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -25,6 +27,7 @@ SP_BY = {s[0]: s for s in SP}
 TX_BY = {t[0]: t for t in TX}
 RX_BY = {r[0]: r for r in RX}
 NR_BY = {n[0]: n for n in NO_REACTION}
+MM_BY = {m[0]: m for m in MAJMIN}
 PR_BY = {p[0]: p for p in PRACTICE}
 STEREO_IN_NAME = re.compile(r"\((?:\d*[RSEZrs],?)+\)|\bcis-|\btrans-|(?:^|-)[DL]-|[αβ]-|alpha|beta")
 RULE_OBJ = {k: (Rule(k, v[1], v[2], v[3], v[4]) if v[2] else None) for k, v in RULES.items()}
@@ -67,22 +70,45 @@ def verify():
         else:
             for p in check_reaction(RULE_OBJ[rule], steps, L, R):
                 problems.append(f"  {rid} ({rule}): {p}")
+    for mid, rule, _, left, major, minor, *_ in MAJMIN:
+        L = [(c, smiles_of(s)) for c, s in left]
+        if RULE_OBJ[rule].selector is None:
+            problems.append(f"  {mid}: rule '{rule}' has no major-product selector")
+            continue
+        for p in check_reaction(RULE_OBJ[rule], 1, L, [(c, smiles_of(s)) for c, s in major]):
+            problems.append(f"  {mid} (major): {p}")
+        b_ = balance(L, [(c, smiles_of(s)) for c, s in minor])
+        if b_:
+            problems.append(f"  {mid} (minor): atoms or charge do not balance ({b_})")
+        ins = [smiles_of(s) for c, s in left for _ in range(c)]
+        want = Counter()
+        for c, s in minor:
+            for part in smiles_of(s).split("."):
+                want[key(part)] += c
+        allowed = [Counter(o["keys"]) for o in RULE_OBJ[rule].apply(ins, select=False)]
+        picked = [Counter(o["keys"]) for o in RULE_OBJ[rule].apply(ins)]
+        if want not in allowed:
+            problems.append(f"  {mid} (minor): not a product the '{rule}' rule allows")
+        elif want in picked:
+            problems.append(f"  {mid} (minor): the rule picks this as the major product")
     for nid, rule, sps in NO_REACTION:
         if RULE_OBJ[rule].apply([smiles_of(s) for s in sps]):
             problems.append(f"  {nid}: '{rule}' applies to {sps}, but the page says no reaction")
     for pid, ref, mode, *_ in PRACTICE:
-        if (mode == "noreaction") != (ref in NR_BY) or (ref not in RX_BY and ref not in NR_BY):
+        if (mode == "noreaction") != (ref in NR_BY) or (mode == "majmin") != (ref in MM_BY) \
+                or not (ref in RX_BY or ref in NR_BY or ref in MM_BY):
             problems.append(f"  practice {pid}: bad reference {ref} for mode {mode}")
     if problems:
         print("REACTION CHECK FAILED:\n" + "\n".join(problems))
         sys.exit(1)
     print(f"Reaction check passed: {len(SP)} structures named, {len(RX)} reactions "
-          f"({sum(isinstance(r[1], tuple) for r in RX)} checked both ways), {len(NO_REACTION)} no-reaction cases.")
+          f"({sum(isinstance(r[1], tuple) for r in RX)} checked both ways), {len(MAJMIN)} major/minor sets, "
+          f"{len(NO_REACTION)} no-reaction cases.")
 
 
 # ---------------------------------------------------------------- rendering
 SHOWN = {}
-USED, USED_RX, USED_PRACTICE = set(), set(), set()
+USED, USED_RX, USED_PRACTICE, USED_MM = set(), set(), set(), set()
 
 
 def _uid(base):
@@ -426,6 +452,43 @@ def scheme(rid, show_tag=True, hide_products=False):
             f'<div class="rxn-row" aria-hidden="true">{side_list(left, mols, compact, scale, hscale)}{arrow(kind, above, below)}{rhs}</div></figure>')
 
 
+MM_SCALE = 1.1   # products inside the major/minor boxes
+
+
+def majmin_scheme(mid, quiz=False):
+    """One starting material, two possible products side by side, labeled major and minor
+    (or A and B, for a practice problem). Products both outcomes share, like water, are shown once."""
+    USED_MM.add(mid)
+    _, rule, rname, left, major, minor, above, below, mwhy, nwhy, nlabel = MM_BY[mid]
+    common = [x for x in major if x in minor]
+    maj = [x for x in major if x not in common]
+    mnr = [x for x in minor if x not in common]
+    mols = layout(left, maj + mnr)
+
+    def box(cls, tag, prods, why):
+        # "minor (little or none forms)": the tag says "minor"; the qualifier goes on its own line.
+        tag, _, qual = tag.partition(" (")
+        q = f'<span class="mm-qual">{html.escape(qual.rstrip(")"))}</span>' if qual else ""
+        w = f'<span class="mm-why">{html.escape(why)}</span>' if why else ""
+        return (f'<div class="mm {cls}"><span class="mm-tag">{html.escape(tag)}</span>{q}'
+                f'<div class="mm-figs">{side_list(prods, mols, scale=MM_SCALE)}</div>{w}</div>')
+
+    each = f", each with {words(common)}" if common else ""
+    if quiz:
+        boxes = box("choice", "A", mnr, "") + box("choice", "B", maj, "")
+        sentence = f"{words(left)} could give A, {words(mnr)}, or B, {words(maj)}{each}."
+    else:
+        boxes = box("major", "major", maj, mwhy) + box("minor", nlabel, mnr, nwhy)
+        sentence = (f"{type_words(rule).capitalize()}, following {rname}. {words(left)} can give two products{each}. "
+                    f"Major: {words(maj)}, {mwhy}. {nlabel.capitalize()}: {words(mnr)}, {nwhy}.")
+    tail = ('<span class="plus">+</span>' + side_list(common)) if common else ""
+    head = "" if quiz else (f'<div class="rxn-head">{tag_for(rule)}'
+                            f'<span class="rtype rule">{html.escape(rname)}</span></div>')
+    return (f'<figure class="rxn">{head}<p class="sr-only">{html.escape(sentence)}</p>'
+            f'<div class="rxn-row" aria-hidden="true">{side_list(left, mols, scale=MM_SCALE)}{arrow("→", above, below)}'
+            f'<div class="mm-set">{boxes}{f"<span class=mm-tail>{tail}</span>" if tail else ""}</div></div></figure>')
+
+
 def noreaction_scheme(nid, label):
     _, rule, sps = NR_BY[nid]
     left = [(1, s) for s in sps if s in SP_BY]
@@ -444,6 +507,9 @@ def practice(pid):
     elif mode == "type":
         body = scheme(ref, show_tag=False)
         ans = f'<p class="ans">{html.escape(type_words(RX_BY[ref][1]).capitalize())}</p><p>{html.escape(why)}</p>'
+    elif mode == "majmin":
+        body = majmin_scheme(ref, quiz=True)
+        ans = majmin_scheme(ref) + f"<p>{html.escape(why)}</p>"
     else:
         body = noreaction_scheme(ref, RULES[NR_BY[ref][1]][0])
         ans = f'<p class="ans">No reaction</p><p>{html.escape(why)}</p>'
@@ -462,6 +528,8 @@ def expand(md):
         kind, *args = m.group(1).split()
         if kind == "rxn":
             out = scheme(args[0])
+        elif kind == "majmin":
+            out = majmin_scheme(args[0])
         elif kind == "practice":
             out = practice(args[0])
         elif kind == "fig":
@@ -490,7 +558,8 @@ def sections():
 def report_unused():
     notes = []
     for label, allv, used in (("structures", SP_BY, USED), ("reactions", RX_BY, USED_RX),
-                              ("practice problems", PR_BY, USED_PRACTICE)):
+                              ("practice problems", PR_BY, USED_PRACTICE),
+                              ("major/minor sets", MM_BY, USED_MM)):
         missing = sorted(set(allv) - used)
         if missing:
             notes.append(f"{label} not shown: " + ", ".join(missing))
