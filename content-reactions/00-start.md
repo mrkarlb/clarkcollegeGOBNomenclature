@@ -21,7 +21,7 @@ The goal of this page is to let you **look at a reaction and name its type**, fr
 - **A double arrow (⇌)** means the reaction runs both ways. On this page, a double arrow labeled on both sides shows a **pair**: the label on top is the forward reaction, the label underneath is the reverse.
 - **"2 H"** in a product means two hydrogen atoms were removed. In the body they don't float free: a coenzyme picks them up. NAD⁺ becomes NADH + H⁺, or FAD becomes FADH₂.
 
-This page doesn't cover **mechanisms** (how electrons move during a reaction). You need to know what goes in and what comes out.
+This page doesn't cover **mechanisms** (how electrons move during a reaction). That's for the advanced class. You simply need to focus on what goes in and what comes out.
 
 ## Identify the reaction type {#identify}
 
@@ -33,8 +33,8 @@ Find the functional group that changes, then find it in the left column.
 | alcohol | alkene (C=C) + water | **elimination** (dehydration) | addition (hydration) |
 | alkene (C=C) + H₂, X₂, or HX | alkane, or a halide | **addition** | — |
 | aldehyde or ketone + alcohol | hemiacetal (sugar rings) | **addition** | elimination (ring opening) |
-| 1° alcohol | aldehyde, then carboxylic acid | **oxidation** (loses H) | reduction |
-| 2° alcohol | ketone | **oxidation** (loses H) | reduction |
+| [1° alcohol](./#alcohol-class) | aldehyde, then carboxylic acid | **oxidation** (loses H) | reduction |
+| [2° alcohol](./#alcohol-class) | ketone | **oxidation** (loses H) | reduction |
 | aldehyde or ketone | alcohol | **reduction** (gains H) | oxidation |
 | –CH₂–CH₂– | –CH=CH– (C=C) | **oxidation** (loses H, to FAD) | reduction |
 | carboxylic acid + alcohol | ester + water | **condensation** | hydrolysis |

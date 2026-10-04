@@ -11,7 +11,7 @@ This section covers single-bonded groups containing oxygen, halogens, nitrogen, 
 
 [[figs alc1 alc2 alc3]]
 
-### Primary, secondary, and tertiary alcohols
+### Primary, secondary, and tertiary alcohols {#alcohol-class}
 
 Classify an alcohol by counting the **carbons bonded to the carbon that holds the OH**: one carbon makes it **primary (1°)**, two makes it **secondary (2°)**, three makes it **tertiary (3°)**. The class predicts how the alcohol reacts, for example whether it can be oxidized to an aldehyde or ketone.
 

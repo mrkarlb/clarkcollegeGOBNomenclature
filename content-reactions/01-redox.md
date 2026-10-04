@@ -29,6 +29,10 @@ Enzymes that run these reactions are named for it: **dehydrogenases** remove hyd
 
 Whether an alcohol can be oxidized, and what it becomes, depends on how many H atoms are on the carbon holding the OH.
 
+<div class="note" markdown="1">
+**Classify the alcohol first.** Count the carbons bonded to the carbon that holds the OH: one carbon makes it **1°**, two make it **2°**, three make it **3°**. Each of those carbons takes the place of an H, so a 1° alcohol carbon has two H to give up, a 2° has one, and a 3° has none. Need a refresher? See [primary, secondary, and tertiary alcohols](./#alcohol-class) in the naming guide.
+</div>
+
 **A 1° alcohol** oxidizes to an **aldehyde**, and the aldehyde oxidizes again to a **carboxylic acid**. Your liver does exactly this to ethanol:
 
 [[rxn r_etoh1]]
