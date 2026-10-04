@@ -23,6 +23,10 @@ In the body, the 2 H are carried by a **coenzyme**, a small helper molecule that
 - **FAD** picks up 2 H (as FADH₂) when a **C–C** becomes a **C=C**.
 - **NADH** and **NADPH** give 2 H back when the body needs a reduction.
 
+<div class="note" markdown="1">
+**Why it's called oxidation: electrons.** Formally, **oxidation is the loss of electrons** and **reduction is the gain of electrons**, the same definition used for metals and ions in an introductory chemistry course. Tracking H works for organic molecules because each H takes its electron with it. When NAD⁺ takes 2 H from an alcohol, one arrives as a hydride ion (H⁻, a proton carrying two electrons) and bonds to NAD⁺, making NADH; the other leaves as H⁺. The alcohol loses two electrons, so it is oxidized, and NAD⁺ gains two electrons, so it is reduced. One can't happen without the other: every oxidation is paired with a reduction, which is why these are called **redox** reactions. FAD works the same way, taking both H atoms, with their electrons, to become FADH₂.
+</div>
+
 Enzymes that run these reactions are named for it: **dehydrogenases** remove hydrogen, **reductases** add it. Both belong to the enzyme class called **oxidoreductases**.
 
 ## Oxidizing alcohols: 1°, 2°, and 3° {#alcohols}
